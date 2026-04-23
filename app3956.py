@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 # --- 1. CẤU HÌNH TRANG ---
-st.set_page_config(page_title="FTD KPI | COMMAND CENTER", layout="wide")
+st.set_page_config(page_title="3956 KPI | COMMAND CENTER", layout="wide")
 
 # --- 2. GIAO DIỆN (CSS) ---
 st.markdown("""
