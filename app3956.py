@@ -20,7 +20,10 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
     .mini-stat-label { color: #888; font-size: 11px; text-transform: uppercase; }
-    .mini-stat-value { color: #fff; font-size: 16px; font-weight: bold; }
+    .mini-stat-value { color: #fff; font-size: 15px; font-weight: bold; }
+    .target-value { color: #f29b05; font-weight: bold; }
+    /* Màu thanh tiến độ */
+    .stProgress > div > div > div > div { background-color: #f29b05; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -40,6 +43,7 @@ texts = {
         'select': "--- Chọn tên ---",
         'alliance': "LIÊN MINH", 'power': "SỨC MẠNH", 'tkill': "TỔNG KILL", 'tdead': "TỔNG DEAD",
         'k_inc': "Kill KvK Tăng", 'd_inc': "Dead KvK Tăng",
+        'k_target': "Kill cần đạt", 'd_target': "Dead cần đạt",
         'table_title': "📋 BẢNG THỐNG KÊ TỔNG HỢP",
         'cols': ['Tên Chiến Binh', 'ID', 'Liên Minh', 'Sức Mạnh', 'Tổng Kill', 'Kill Tăng', 'Dead Tăng', '% KPI']
     },
@@ -49,6 +53,7 @@ texts = {
         'select': "--- Select Name ---",
         'alliance': "ALLIANCE", 'power': "POWER", 'tkill': "TOTAL KILLS", 'tdead': "TOTAL DEADS",
         'k_inc': "Kills Increased", 'd_inc': "Deads Increased",
+        'k_target': "Target Kill", 'd_target': "Target Dead",
         'table_title': "📋 SUMMARY STATISTICS TABLE",
         'cols': ['Warrior Name', 'ID', 'Alliance', 'Power', 'Total Kills', 'Kills (+)', 'Deads (+)', 'KPI %']
     }
@@ -70,12 +75,11 @@ def load_data():
             d['Tên'] = d['Tên'].fillna('Unknown').astype(str).str.strip()
         df = pd.merge(dt.drop_duplicates('ID'), ds.drop_duplicates('ID'), on='ID', suffixes=('_1', '_2'))
         num_cols = ['Sức Mạnh_2', 'Tổng Tiêu Diệt_2', 'Điểm Chết_2', 'Tổng Tiêu Diệt_1', 'Điểm Chết_1']
-        for c in num_cols:
-            df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
+        for c in num_cols: df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
         df['KI'] = df['Tổng Tiêu Diệt_2'] - df['Tổng Tiêu Diệt_1']
         df['DI'] = df['Điểm Chết_2'] - df['Điểm Chết_1']
         
-        def calc_kpi(r):
+        def get_metrics(r):
             p = r['Sức Mạnh_2']
             if p >= 30e6: gk, gd = 30e6, 400e3
             elif p >= 20e6: gk, gd = 25e6, 300e3
@@ -83,8 +87,9 @@ def load_data():
             else: gk, gd = 10e6, 200e3
             pk = max(0, min(r['KI']/gk, 1.0)) if gk > 0 else 0
             pdv = max(0, min(r['DI']/gd, 1.0)) if gd > 0 else 0
-            return round(((pk + pdv) / 2) * 100, 1)
-        df['KPI'] = df.apply(calc_kpi, axis=1)
+            return pd.Series([round(((pk + pdv) / 2) * 100, 1), gk, gd])
+        
+        df[['KPI', 'GK', 'GD']] = df.apply(get_metrics, axis=1)
         return df
     except: return None
 
@@ -99,23 +104,40 @@ if df is not None:
     
     if sel != L['select']:
         d = df[df['Tên_2'] == sel].iloc[0]
-        c1, c2 = st.columns([1, 1.2])
+        c1, c2 = st.columns([1.2, 1])
+        
         with c1:
             st.markdown(f"""
                 <div class="command-card">
                     <h2 style="color:#f29b05; margin:0;">👤 {sel}</h2>
-                    <p style="color:#888; font-size:13px;">ID: {d['ID']}</p>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <p style="color:#888; font-size:12px; margin-bottom:15px;">ID: {d['ID']}</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <div><span class="mini-stat-label">{L['alliance']}</span><br><span class="mini-stat-value">{d['Liên Minh_2']}</span></div>
                         <div><span class="mini-stat-label">{L['power']}</span><br><span class="mini-stat-value">{int(d['Sức Mạnh_2']):,}</span></div>
                         <div><span class="mini-stat-label">{L['tkill']}</span><br><span class="mini-stat-value">{int(d['Tổng Tiêu Diệt_2']):,}</span></div>
                         <div><span class="mini-stat-label">{L['tdead']}</span><br><span class="mini-stat-value">{int(d['Điểm Chết_2']):,}</span></div>
+                        <div style="border-top: 1px solid #444; padding-top:8px;">
+                            <span class="mini-stat-label">{L['k_target']}</span><br>
+                            <span class="target-value">{int(d['GK']):,}</span>
+                        </div>
+                        <div style="border-top: 1px solid #444; padding-top:8px;">
+                            <span class="mini-stat-label">{L['d_target']}</span><br>
+                            <span class="target-value">{int(d['GD']):,}</span>
+                        </div>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
-            col_m1, col_m2 = st.columns(2)
-            col_m1.metric(L['k_inc'], f"{int(d['KI']):,}")
-            col_m2.metric(L['d_inc'], f"{int(d['DI']):,}")
+            
+            # Thanh tiến độ nhỏ gọn bên dưới khung
+            st.write("")
+            col_met1, col_met2 = st.columns(2)
+            with col_met1:
+                st.caption(f"{L['k_inc']}: {int(d['KI']):,}")
+                st.progress(max(0.0, min(d['KI'] / d['GK'], 1.0)) if d['GK'] > 0 else 0.0)
+            with col_met2:
+                st.caption(f"{L['d_inc']}: {int(d['DI']):,}")
+                st.progress(max(0.0, min(d['DI'] / d['GD'], 1.0)) if d['GD'] > 0 else 0.0)
+
         with c2:
             fig = go.Figure(go.Indicator(
                 mode = "gauge+number", value = d['KPI'],
@@ -129,7 +151,6 @@ if df is not None:
     st.subheader(L['table_title'])
     v_df = df[['Tên_2', 'ID', 'Liên Minh_2', 'Sức Mạnh_2', 'Tổng Tiêu Diệt_2', 'KI', 'DI', 'KPI']].copy()
     v_df.columns = L['cols']
-    # Định dạng bảng an toàn, không dùng style.background_gradient để tránh lỗi thư viện
     st.dataframe(v_df.style.format({
         L['cols'][3]: '{:,.0f}', L['cols'][4]: '{:,.0f}', 
         L['cols'][5]: '{:,.0f}', L['cols'][6]: '{:,.0f}', L['cols'][7]: '{:.1f}%'
