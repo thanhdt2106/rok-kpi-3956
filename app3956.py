@@ -5,60 +5,59 @@ import plotly.graph_objects as go
 # --- 1. CẤU HÌNH TRANG ---
 st.set_page_config(page_title="FTD KPI | COMMAND CENTER", layout="wide")
 
-# --- 2. GIAO DIỆN (CSS CUSTOM) ---
+# --- 2. GIAO DIỆN (CSS CUSTOM - TONE XANH ĐEN) ---
 st.markdown("""
     <style>
-    /* Nền chính màu vàng nhẹ */
+    /* Nền chính màu xanh đen nhẹ */
     .stApp {
-        background-color: #fdf6e3; 
-        color: #333;
+        background-color: #0e1117; 
+        color: #e0e6ed;
     }
     
-    /* Tiêu đề chính */
+    /* Tiêu đề chính phát sáng */
     .main-header {
-        color: #b58900; text-align: center; font-size: 32px;
+        color: #00d4ff; text-align: center; font-size: 32px;
         font-weight: bold; padding: 15px;
         text-transform: uppercase;
         letter-spacing: 2px;
+        text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
     }
 
-    /* Khung Profile chi tiết - Hiệu ứng phát sáng và bo góc */
+    /* Khung Profile - Viền phát sáng xanh cyan */
     .command-card {
-        background: #ffffff;
-        border-radius: 20px;
+        background: #1a1c23;
+        border-radius: 15px;
         padding: 25px;
-        box-shadow: 0 10px 25px rgba(181, 137, 0, 0.2), 0 0 10px rgba(181, 137, 0, 0.1);
-        border: 2px solid rgba(181, 137, 0, 0.3);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(0, 212, 255, 0.2);
         margin-bottom: 20px;
-        transition: 0.3s;
     }
     
-    .mini-stat-label { color: #657b83; font-size: 11px; text-transform: uppercase; font-weight: bold; }
-    .mini-stat-value { color: #073642; font-size: 17px; font-weight: 900; }
-    .target-value { color: #d33682; font-weight: bold; font-size: 18px; }
+    .mini-stat-label { color: #8899a6; font-size: 11px; text-transform: uppercase; font-weight: bold; }
+    .mini-stat-value { color: #ffffff; font-size: 17px; font-weight: bold; }
+    .target-value { color: #00d4ff; font-weight: bold; font-size: 18px; }
 
-    /* Bảng tổng hợp - Màu xanh, hiệu ứng nổi 3D */
+    /* Bảng tổng hợp - Phong cách High-tech */
     [data-testid="stDataFrame"] {
-        background-color: #e1e8ed;
-        border: 1px solid #002b36;
-        border-radius: 15px;
-        box-shadow: inset 5px 5px 10px #b8c1c8, inset -5px -5px 10px #ffffff;
+        background-color: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 10px;
         padding: 10px;
     }
 
-    /* Tùy chỉnh thanh tiến độ */
+    /* Thanh tiến độ xanh neon */
     .stProgress > div > div > div > div {
-        background-image: linear-gradient(to right, #268bd2, #2aa198);
+        background-image: linear-gradient(to right, #00d4ff, #005f73);
     }
     
     /* Radio button ngôn ngữ */
     div[data-testid="stRadio"] > label {
-        font-weight: bold; color: #b58900;
+        font-weight: bold; color: #00d4ff;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. QUẢN LÝ NGÔN NGỮ ---
+# --- 3. QUẢN LÝ NGÔN NGỮ (GÓC PHẢI) ---
 col_t, col_l = st.columns([4, 1]) 
 with col_l:
     lang = st.radio("LANG:", ["VN", "EN"], horizontal=True, label_visibility="collapsed")
@@ -87,7 +86,7 @@ texts = {
 }
 L = texts[lang]
 
-# --- 4. XỬ LÝ DỮ LIỆU (Giữ nguyên logic Power mới của bạn) ---
+# --- 4. XỬ LÝ DỮ LIỆU ---
 SHEET_ID = '1MJQSE3siwFWmQNdJmbbJ6RsilvcoxWTu-r6h-UdHugE'
 URL_T = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=731741617'
 URL_S = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=371969335'
@@ -139,15 +138,15 @@ if df is not None:
         with c1:
             st.markdown(f"""
                 <div class="command-card">
-                    <h2 style="color:#b58900; margin:0; font-size:28px;">👤 {sel}</h2>
-                    <p style="color:#888; font-size:13px; margin-bottom:20px;">ID: {d['ID']}</p>
+                    <h2 style="color:#00d4ff; margin:0; font-size:28px;">👤 {sel}</h2>
+                    <p style="color:#8899a6; font-size:13px; margin-bottom:20px;">ID: {d['ID']}</p>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div><span class="mini-stat-label">{L['all']}</span><br><span class="mini-stat-value">{d['Liên Minh_2']}</span></div>
                         <div><span class="mini-stat-label">{L['pow']}</span><br><span class="mini-stat-value">{int(d['Sức Mạnh_2']):,}</span></div>
                         <div><span class="mini-stat-label">{L['tk']}</span><br><span class="mini-stat-value">{int(d['Tổng Tiêu Diệt_2']):,}</span></div>
                         <div><span class="mini-stat-label">{L['td']}</span><br><span class="mini-stat-value">{int(d['Điểm Chết_2']):,}</span></div>
-                        <div style="border-top: 2px solid #eee; padding-top:10px;"><span class="mini-stat-label">{L['kt']}</span><br><span class="target-value">{int(d['GK']):,}</span></div>
-                        <div style="border-top: 2px solid #eee; padding-top:10px;"><span class="mini-stat-label">{L['dt']}</span><br><span class="target-value">{int(d['GD']):,}</span></div>
+                        <div style="border-top: 1px solid #30363d; padding-top:10px;"><span class="mini-stat-label">{L['kt']}</span><br><span class="target-value">{int(d['GK']):,}</span></div>
+                        <div style="border-top: 1px solid #30363d; padding-top:10px;"><span class="mini-stat-label">{L['dt']}</span><br><span class="target-value">{int(d['GD']):,}</span></div>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
@@ -161,15 +160,15 @@ if df is not None:
         with c2:
             fig = go.Figure(go.Indicator(
                 mode = "gauge+number", value = float(d['KPI']),
-                number = {'suffix': "%", 'font': {'color': '#b58900', 'size': 50}},
+                number = {'suffix': "%", 'font': {'color': '#00d4ff', 'size': 50}},
                 gauge = {
-                    'axis': {'range': [0, 100], 'tickcolor': "#b58900"},
-                    'bar': {'color': "#268bd2"},
-                    'bgcolor': "white",
-                    'borderwidth': 2, 'bordercolor': "#eee"
+                    'axis': {'range': [0, 100], 'tickcolor': "#00d4ff"},
+                    'bar': {'color': "#00d4ff"},
+                    'bgcolor': "#161b22",
+                    'borderwidth': 1, 'bordercolor': "#30363d"
                 }
             ))
-            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', height=300)
+            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', height=300, font={'color': "#e0e6ed"})
             st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
@@ -177,7 +176,6 @@ if df is not None:
     v_df = df[['Tên_2', 'ID', 'Liên Minh_2', 'Sức Mạnh_2', 'Tổng Tiêu Diệt_2', 'KI', 'DI', 'KPI']].copy()
     v_df.columns = L["cols"]
     
-    # Hiển thị bảng với style màu xanh nổi
     st.dataframe(v_df.style.format({
         L["cols"][3]: '{:,.0f}', L["cols"][4]: '{:,.0f}', 
         L["cols"][5]: '{:,.0f}', L["cols"][6]: '{:,.0f}', L["cols"][7]: '{:.1f}%'
