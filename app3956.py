@@ -51,10 +51,7 @@ L = TEXTS[st.session_state.lang]
 # --- 5. CSS CUSTOM (LOẠI BỎ PHẦN XÓA KHOẢNG ĐEN GÂY LỖI) ---
 st.markdown(f"""
     <style>
-    /* Chỉ ẩn Header mặc định của Streamlit */
-    header[data-testid="stHeader"] {{display: none !important;}}
-    
-    .stApp {{ background-color: #0d1117; color: #c9d1d9; }}
+   
     
     /* Sticky Header: Giữ thanh search luôn ở đỉnh để không bị bàn phím che */
     [data-testid="stVerticalBlock"] > div:first-child {{
