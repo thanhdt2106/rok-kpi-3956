@@ -49,7 +49,7 @@ def sync_search_callback():
 L = TEXTS[st.session_state.lang]
 
 # --- 5. CSS CUSTOM (FIX KHOẢNG ĐEN & STICKY SEARCH) ---
-st.markdown(f"""
+st.markdown(f""
 
     
     /* Sticky Header: Giữ thanh search luôn ở đỉnh khi cuộn hoặc hiện bàn phím */
@@ -77,7 +77,7 @@ st.markdown(f"""
     /* Thu nhỏ tabs trên mobile */
     button[data-baseweb="tab"] {{ padding: 10px 15px !important; }}
     </style>
-""", unsafe_allow_html=True)
+"", unsafe_allow_html=True)
 
 # --- 6. DATA ENGINE ---
 @st.cache_data(ttl=5)
