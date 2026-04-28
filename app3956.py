@@ -5,18 +5,18 @@ import plotly.graph_objects as go
 # --- 1. CẤU HÌNH TRANG ---
 st.set_page_config(page_title="FTD KPI SYSTEM", layout="wide", initial_sidebar_state="collapsed")
 
-# --- 2. KHỞI TẠO SESSION STATE (CHỐNG RESET) ---
+# --- 2. KHỞI TẠO SESSION STATE (CHỐNG RESET & LƯU DỮ LIỆU) ---
 if 'lang' not in st.session_state:
     st.session_state.lang = "VN"
 if 'selected_commander' not in st.session_state:
-    st.session_state.selected_commander = ""
+    st.session_state.selected_commander = None
 
 # --- 3. DỮ LIỆU PHIÊN DỊCH ---
 TEXTS = {
     "VN": {
         "header": "HỆ THỐNG KPI - SHARED HOUSE 3956",
         "tab1": "👤 HỒ SƠ CHI TIẾT", "tab2": "📊 TỔNG QUAN QUÂN ĐOÀN",
-        "placeholder": "Thêm ID hoặc tên của bạn ...",
+        "placeholder": "Gõ ID hoặc tên để tìm kiếm...",
         "rank": "🏆 HẠNG", "power_now": "🛡️ SỨC MẠNH", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT", 
         "target_kill": "ĐẠT: ", "target_dead": "ĐẠT: ",
@@ -30,7 +30,7 @@ TEXTS = {
     "EN": {
         "header": "KPI SYSTEM - SHARED HOUSE 3956",
         "tab1": "👤 DETAILED PROFILE", "tab2": "📊 ALLIANCE OVERVIEW",
-        "placeholder": "Add your ID or Name ...",
+        "placeholder": "Type ID or Name to search...",
         "rank": "🏆 RANK", "power_now": "🛡️ POWER", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 VIEW FULL STATISTICS", 
         "target_kill": "REACHED: ", "target_dead": "REACHED: ",
@@ -43,48 +43,31 @@ TEXTS = {
     }
 }
 
-def on_lang_change():
-    st.session_state.lang = st.session_state.radio_lang
-
-def on_choice_change():
-    st.session_state.selected_commander = st.session_state.search_box
-
 L = TEXTS[st.session_state.lang]
 
-# --- 4. CSS CUSTOM (BAO GỒM HIỆU ỨNG KÍNH LÚP) ---
+# --- 4. CSS CUSTOM (KÍNH LÚP & GIAO DIỆN) ---
 st.markdown(f"""
     <style>
     header[data-testid="stHeader"] {{display: none !important;}}
     .stApp {{ background-color: #0d1117; color: #c9d1d9; }}
-    
     .main-header {{ 
         background: linear-gradient(90deg, #00FFFF, #58a6ff); 
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
         text-align: center; font-size: clamp(22px, 5vw, 32px); font-weight: 900; padding-bottom: 15px;
     }}
-
-    /* Hiệu ứng kính lúp cho ô Search */
-    div[data-testid="stSelectbox"] > div:first-child {{
-        position: relative;
+    /* Hiệu ứng kính lúp cho ô nhập liệu */
+    .search-container {{ position: relative; }}
+    .search-icon {{ position: absolute; left: 12px; top: 10px; z-index: 2; opacity: 0.6; }}
+    input[data-testid="stTextInputEnterChat"] {{ padding-left: 40px !important; }}
+    div[data-testid="stTextInput"] div[data-baseweb="input"]::before {{
+        content: "🔍"; position: absolute; left: 10px; top: 8px; z-index: 1; opacity: 0.7;
     }}
-    div[data-testid="stSelectbox"]::before {{
-        content: "🔍";
-        position: absolute;
-        left: 10px;
-        top: 8px;
-        z-index: 1;
-        font-size: 16px;
-        opacity: 0.6;
-    }}
-    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {{
-        padding-left: 35px !important; /* Đẩy chữ placeholder sang phải để không đè icon */
-    }}
+    div[data-testid="stTextInput"] input {{ padding-left: 35px !important; }}
 
     .info-box {{ background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; min-height: 70px; }}
     .info-label {{ color: #8b949e; font-size: 11px; font-weight: bold; text-transform: uppercase; }}
     .info-value {{ color: #ffffff; font-size: 16px; font-weight: 800; }}
     .gauge-footer {{ color: #58a6ff; font-size: 13px; font-weight: 800; text-align: center; margin-top: -35px; }}
-    
     @media (max-width: 768px) {{
         [data-testid="column"] {{ width: 50% !important; flex: 1 1 50% !important; min-width: 50% !important; }}
     }}
@@ -92,24 +75,20 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # --- 5. DATA ENGINE ---
-SHEET_ID = '1MJQSE3siwFWmQNdJmbbJ6RsilvcoxWTu-r6h-UdHugE'
-URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=351056493'
-
 @st.cache_data(ttl=5)
 def load_data():
     try:
+        URL = f'https://docs.google.com/spreadsheets/d/1MJQSE3siwFWmQNdJmbbJ6RsilvcoxWTu-r6h-UdHugE/export?format=csv&gid=351056493'
         df = pd.read_csv(URL)
         df.columns = [str(c).strip() for c in df.columns]
         c_id, c_name, c_pow, c_kill = "ID nhân vật", "Tên Người Dùng", "Sức Mạnh", "Tổng Điểm Tiêu Diệt"
-        for col in [c_pow, c_kill]: df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         dead_cols = ['T5 tử vong', 'T4 tử vong', 'T3 tử vong', 'T2 tử vong', 'T1 tử vong']
-        for col in dead_cols: df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+        for col in [c_pow, c_kill] + dead_cols: df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         df['SUM_DEAD'] = df[dead_cols].sum(axis=1)
         df['K_PCT'] = (df[c_kill] / 300_000_000 * 100).round(1)
         df['D_PCT'] = (df['SUM_DEAD'] / 400_000 * 100).round(1)
         df = df.sort_values(by='K_PCT', ascending=False).reset_index(drop=True)
         df.insert(0, 'H_RAW', range(1, len(df) + 1))
-        df['Search_Display'] = df[c_name] + " (ID: " + df[c_id].astype(str) + ")"
         return df, c_id, c_name, c_pow, c_kill
     except: return None
 
@@ -120,29 +99,44 @@ if res:
     
     col_lang, col_search = st.columns([1, 4])
     with col_lang:
-        st.radio("L", ["VN", "EN"], key="radio_lang", on_change=on_lang_change, 
-                 index=0 if st.session_state.lang == "VN" else 1, horizontal=True, label_visibility="collapsed")
+        new_lang = st.radio("L", ["VN", "EN"], index=0 if st.session_state.lang == "VN" else 1, horizontal=True, label_visibility="collapsed")
+        if new_lang != st.session_state.lang:
+            st.session_state.lang = new_lang
+            st.rerun()
+    
     with col_search:
-        # SELECTBOX VỚI ICON KÍNH LÚP QUA CSS
-        choice = st.selectbox("S", options=[""] + df['Search_Display'].tolist(), 
-                              key="search_box", on_change=on_choice_change,
-                              placeholder=L["placeholder"], label_visibility="collapsed")
+        # CHỈ HIỆN GỢI Ý KHI GÕ
+        search_input = st.text_input("S", placeholder=L["placeholder"], label_visibility="collapsed")
+        
+        selected_data = None
+        if search_input:
+            # Lọc danh sách khớp với ký tự gõ (theo tên hoặc ID)
+            matches = df[df[c_name].str.contains(search_input, case=False, na=False) | 
+                        df[c_id].astype(str).str.contains(search_input)]
+            
+            if not matches.empty:
+                # Hiện danh sách gợi ý để người dùng chọn
+                options = matches[c_name] + " (ID: " + matches[c_id].astype(str) + ")"
+                choice = st.selectbox("👇 Chọn từ gợi ý:", [""] + options.tolist(), label_visibility="collapsed")
+                if choice:
+                    selected_data = df[(df[c_name] + " (ID: " + df[c_id].astype(str) + ")") == choice].iloc[0]
+                    st.session_state.selected_commander = selected_data
+            else:
+                st.warning("Không tìm thấy chiến binh này!")
 
     tab1, tab2 = st.tabs([L["tab1"], L["tab2"]])
     
     with tab1:
-        current_selection = st.session_state.selected_commander
-        if current_selection != "":
-            d = df[df['Search_Display'] == current_selection].iloc[0]
-            
-            # 4 Hộp chỉ số
+        d = st.session_state.selected_commander
+        if d is not None:
+            # --- PROFILE ---
             m1, m2, m3, m4 = st.columns(4)
             m1.markdown(f'<div class="info-box"><div class="info-label">{L["rank"]}</div><div class="info-value" style="color:#FFD700;">#{int(d["H_RAW"])}</div></div>', unsafe_allow_html=True)
             m2.markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>', unsafe_allow_html=True)
             m3.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
             m4.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
             
-            # Chi tiết (Expanded=False)
+            # --- CHI TIẾT (ĐÓNG SẴN) ---
             with st.expander(L["detail_title"], expanded=False):
                 st.markdown(f"**{L['general_stats']}**")
                 c1, c2, c3, c4, c5 = st.columns(5)
@@ -162,7 +156,7 @@ if res:
                 for i, t in enumerate(['T5', 'T4', 'T3', 'T2', 'T1']):
                     d_cols[i].markdown(f'<div class="info-box"><div class="info-label">{t} Dead</div><div class="info-value">{int(d[f"{t} tử vong"]):,}</div></div>', unsafe_allow_html=True)
 
-            # 2 Vòng tròn KPI
+            # --- 2 VÒNG TRÒN KPI ---
             g1, g2 = st.columns(2)
             with g1:
                 fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], number={'suffix': "%", 'font':{'size':24}}, gauge={'bar': {'color': "#00FFFF"}, 'axis': {'range': [0, 100]}}))
