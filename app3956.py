@@ -19,7 +19,7 @@ st.markdown("""
     .main-header { 
         color: #00FFFF; 
         text-align: center; 
-        font-size: 50px; 
+        font-size: 35px; 
         font-weight: 900; 
         padding: 20px; 
         border-bottom: 4px solid #58a6ff; 
@@ -30,28 +30,28 @@ st.markdown("""
     .info-box { 
         background: #161b22; 
         border: 2px solid #30363d; 
-        border-radius: 15px; 
-        padding: 20px; 
+        border-radius: 10px; 
+        padding: 15px; 
         text-align: center; 
-        margin-bottom: 15px; 
+        margin-bottom: 10px; 
     }
-    .info-label { color: #8b949e; font-size: 20px; font-weight: bold; text-transform: uppercase; margin-bottom: 8px; }
-    .info-value { color: #ffffff; font-size: 32px; font-weight: bold; }
+    .info-label { color: #8b949e; font-size: 15px; font-weight: bold; text-transform: uppercase; margin-bottom: 8px; }
+    .info-value { color: #ffffff; font-size: 27px; font-weight: bold; }
     
     /* Chỉnh cỡ chữ cho Selectbox và Tabs */
-    .stSelectbox label p { font-size: 24px !important; font-weight: bold; color: #00FFFF !important; }
-    button[data-baseweb="tab"] p { font-size: 28px !important; font-weight: bold !important; }
+    .stSelectbox label p { font-size: 19px !important; font-weight: bold; color: #00FFFF !important; }
+    button[data-baseweb="tab"] p { font-size: 23px !important; font-weight: bold !important; }
 
     /* --- PHẦN BẢNG DỮ LIỆU SIÊU TO --- */
     /* Phóng to font chữ trong các ô của bảng */
     [data-testid="stDataFrame"] td {
-        font-size: 24px !important;
+        font-size: 30px !important;
         height: 70px !important; /* Tăng độ cao dòng */
     }
     
     /* Phóng to font chữ tiêu đề bảng */
     [data-testid="stDataFrame"] th {
-        font-size: 26px !important;
+        font-size: 35px !important;
         color: #00FFFF !important;
         height: 80px !important;
         background-color: #161b22 !important;
