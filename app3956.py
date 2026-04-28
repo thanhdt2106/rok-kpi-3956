@@ -5,18 +5,18 @@ import plotly.graph_objects as go
 # --- 1. CẤU HÌNH TRANG ---
 st.set_page_config(page_title="FTD KPI SYSTEM", layout="wide", initial_sidebar_state="collapsed")
 
-# --- 2. KHỞI TẠO SESSION STATE (CHỐNG RESET & LƯU DỮ LIỆU) ---
+# --- 2. KHỞI TẠO SESSION STATE (CHỐNG RESET) ---
 if 'lang' not in st.session_state:
     st.session_state.lang = "VN"
-if 'selected_commander' not in st.session_state:
-    st.session_state.selected_commander = None
+if 'search_query' not in st.session_state:
+    st.session_state.search_query = ""
 
 # --- 3. DỮ LIỆU PHIÊN DỊCH ---
 TEXTS = {
     "VN": {
         "header": "HỆ THỐNG KPI - SHARED HOUSE 3956",
         "tab1": "👤 HỒ SƠ CHI TIẾT", "tab2": "📊 TỔNG QUAN QUÂN ĐOÀN",
-        "placeholder": "Gõ ID hoặc tên để tìm kiếm...",
+        "placeholder": "🔍 Gõ ID hoặc tên để tìm kiếm ngay...",
         "rank": "🏆 HẠNG", "power_now": "🛡️ SỨC MẠNH", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT", 
         "target_kill": "ĐẠT: ", "target_dead": "ĐẠT: ",
@@ -30,7 +30,7 @@ TEXTS = {
     "EN": {
         "header": "KPI SYSTEM - SHARED HOUSE 3956",
         "tab1": "👤 DETAILED PROFILE", "tab2": "📊 ALLIANCE OVERVIEW",
-        "placeholder": "Type ID or Name to search...",
+        "placeholder": "🔍 Type ID or Name to search now...",
         "rank": "🏆 RANK", "power_now": "🛡️ POWER", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 VIEW FULL STATISTICS", 
         "target_kill": "REACHED: ", "target_dead": "REACHED: ",
@@ -45,7 +45,7 @@ TEXTS = {
 
 L = TEXTS[st.session_state.lang]
 
-# --- 4. CSS CUSTOM (KÍNH LÚP & GIAO DIỆN) ---
+# --- 4. CSS CUSTOM (HIỆU ỨNG KÍNH LÚP & SEARCH ĐỘNG) ---
 st.markdown(f"""
     <style>
     header[data-testid="stHeader"] {{display: none !important;}}
@@ -55,19 +55,19 @@ st.markdown(f"""
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
         text-align: center; font-size: clamp(22px, 5vw, 32px); font-weight: 900; padding-bottom: 15px;
     }}
-    /* Hiệu ứng kính lúp cho ô nhập liệu */
-    .search-container {{ position: relative; }}
-    .search-icon {{ position: absolute; left: 12px; top: 10px; z-index: 2; opacity: 0.6; }}
-    input[data-testid="stTextInputEnterChat"] {{ padding-left: 40px !important; }}
-    div[data-testid="stTextInput"] div[data-baseweb="input"]::before {{
-        content: "🔍"; position: absolute; left: 10px; top: 8px; z-index: 1; opacity: 0.7;
+    
+    /* Custom Selectbox thành thanh Search giống Google */
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] {{
+        background-color: #1c2128;
+        border: 1px solid #30363d;
+        border-radius: 8px;
     }}
-    div[data-testid="stTextInput"] input {{ padding-left: 35px !important; }}
-
+    
     .info-box {{ background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; min-height: 70px; }}
     .info-label {{ color: #8b949e; font-size: 11px; font-weight: bold; text-transform: uppercase; }}
     .info-value {{ color: #ffffff; font-size: 16px; font-weight: 800; }}
     .gauge-footer {{ color: #58a6ff; font-size: 13px; font-weight: 800; text-align: center; margin-top: -35px; }}
+    
     @media (max-width: 768px) {{
         [data-testid="column"] {{ width: 50% !important; flex: 1 1 50% !important; min-width: 50% !important; }}
     }}
@@ -89,6 +89,7 @@ def load_data():
         df['D_PCT'] = (df['SUM_DEAD'] / 400_000 * 100).round(1)
         df = df.sort_values(by='K_PCT', ascending=False).reset_index(drop=True)
         df.insert(0, 'H_RAW', range(1, len(df) + 1))
+        df['Full_Search'] = df[c_name] + " (ID: " + df[c_id].astype(str) + ")"
         return df, c_id, c_name, c_pow, c_kill
     except: return None
 
@@ -105,30 +106,22 @@ if res:
             st.rerun()
     
     with col_search:
-        # CHỈ HIỆN GỢI Ý KHI GÕ
-        search_input = st.text_input("S", placeholder=L["placeholder"], label_visibility="collapsed")
-        
-        selected_data = None
-        if search_input:
-            # Lọc danh sách khớp với ký tự gõ (theo tên hoặc ID)
-            matches = df[df[c_name].str.contains(search_input, case=False, na=False) | 
-                        df[c_id].astype(str).str.contains(search_input)]
-            
-            if not matches.empty:
-                # Hiện danh sách gợi ý để người dùng chọn
-                options = matches[c_name] + " (ID: " + matches[c_id].astype(str) + ")"
-                choice = st.selectbox("👇 Chọn từ gợi ý:", [""] + options.tolist(), label_visibility="collapsed")
-                if choice:
-                    selected_data = df[(df[c_name] + " (ID: " + df[c_id].astype(str) + ")") == choice].iloc[0]
-                    st.session_state.selected_commander = selected_data
-            else:
-                st.warning("Không tìm thấy chiến binh này!")
+        # Sử dụng Selectbox làm Search bar - Gõ phím là nó tự lọc danh sách gợi ý ngay lập tức
+        choice = st.selectbox(
+            "Search",
+            options=[""] + df['Full_Search'].tolist(),
+            index=0,
+            placeholder=L["placeholder"],
+            label_visibility="collapsed",
+            key="main_search"
+        )
 
     tab1, tab2 = st.tabs([L["tab1"], L["tab2"]])
     
     with tab1:
-        d = st.session_state.selected_commander
-        if d is not None:
+        if choice != "":
+            d = df[df['Full_Search'] == choice].iloc[0]
+            
             # --- PROFILE ---
             m1, m2, m3, m4 = st.columns(4)
             m1.markdown(f'<div class="info-box"><div class="info-label">{L["rank"]}</div><div class="info-value" style="color:#FFD700;">#{int(d["H_RAW"])}</div></div>', unsafe_allow_html=True)
@@ -169,6 +162,7 @@ if res:
                 st.plotly_chart(fig_d, use_container_width=True, config={'displayModeBar': False})
                 st.markdown(f'<div class="gauge-footer">{L["target_dead"]}{int(d["SUM_DEAD"]/1000)}K / 400K</div>', unsafe_allow_html=True)
         else:
+            # Hiện banner khi chưa chọn ai
             st.image("https://github.com/thanhdt2106/rok-kpi-3956/blob/main/meme1.png?raw=true", use_column_width=True)
 
     with tab2:
