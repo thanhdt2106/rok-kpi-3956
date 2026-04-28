@@ -200,5 +200,5 @@ if res:
         styled_df = styled_df.map(highlight_kpi, subset=[col_kpi_k, col_kpi_d])
         
         # 5. Hiển thị bảng
-        st.dataframe(styled_df, use_container_width=True, height=750)
+        st.dataframe(styled_df, use_container_width=True, height=1000)
         st.markdown("</div>", unsafe_allow_html=True)
