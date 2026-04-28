@@ -12,8 +12,7 @@ st.markdown("""
     /* Ẩn Sidebar gốc */
     [data-testid="stSidebar"] {display: none;}
     [data-testid="stHeader"] {background: rgba(0,0,0,0);}
-    
-    .stApp { background-color: #0d1117; color: #c9d1d9; }
+
     .stApp { background-color: #0d1117; color: #c9d1d9; }
     .main-header { color: #00FFFF; text-align: center; font-size: 30px; font-weight: bold; padding: 10px; border-bottom: 2px solid #58a6ff; margin-bottom: 20px; }
     .info-box { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 10px; text-align: center; margin-bottom: 5px; }
