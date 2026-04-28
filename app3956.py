@@ -43,11 +43,6 @@ TEXTS = {
 def change_lang_callback():
     st.session_state.lang = st.session_state.lang_radio_key
 
-def sync_search_callback():
-    if 'main_search' in st.session_state:
-        # Không cần xử lý index phức tạp vì danh sách lọc sẽ thay đổi liên tục
-        pass
-
 L = TEXTS[st.session_state.lang]
 
 # --- 5. CSS CUSTOM ---
@@ -76,7 +71,8 @@ def load_data():
         df.columns = [str(c).strip() for c in df.columns]
         c_id, c_name, c_pow, c_kill = "ID nhân vật", "Tên Người Dùng", "Sức Mạnh", "Tổng Điểm Tiêu Diệt"
         dead_cols = ['T5 tử vong', 'T4 tử vong', 'T3 tử vong', 'T2 tử vong', 'T1 tử vong']
-        for col in [c_pow, c_kill] + dead_cols: df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+        for col in [c_pow, c_kill] + dead_cols: 
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         df['SUM_DEAD'] = df[dead_cols].sum(axis=1)
         df['K_PCT'] = (df[c_kill] / 300_000_000 * 100).round(1)
         df['D_PCT'] = (df['SUM_DEAD'] / 400_000 * 100).round(1)
@@ -97,34 +93,24 @@ if res:
     st.markdown(f'<div class="main-header">{L["header"]}</div>', unsafe_allow_html=True)
     
     col_lang, col_search = st.columns([1, 4])
+    
     with col_lang:
         st.radio("L", ["VN", "EN"], 
                  index=0 if st.session_state.lang == "VN" else 1, 
                  key="lang_radio_key", on_change=change_lang_callback,
                  horizontal=True, label_visibility="collapsed")
     
-   with col_search:
-        # 1. Tạo danh sách gợi ý (luôn đầy đủ để Streamlit có thể lọc khi gõ)
-        # Thêm một khoảng trắng ở đầu để làm giá trị mặc định
+    with col_search:
+        # Cấu hình danh sách: Có phần tử trống ở đầu
         search_options = [""] + options_list
-        
-        # 2. CSS để ẩn danh sách menu xổ xuống khi chưa gõ gì
-        # Nếu giá trị là "" (trống), menu sẽ bị ẩn đi bằng CSS
         current_val = st.session_state.get("main_search", "")
-        if current_val == "" or current_val is None:
-            st.markdown("""
-                <style>
-                    div[data-baseweb="popover"] { display: none; }
-                </style>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown("""
-                <style>
-                    div[data-baseweb="popover"] { display: block; }
-                </style>
-            """, unsafe_allow_html=True)
 
-        # 3. Widget Selectbox
+        # CSS ẩn menu xổ xuống khi chưa gõ gì
+        if current_val == "" or current_val is None:
+            st.markdown("<style>div[data-baseweb='popover'] { display: none !important; }</style>", unsafe_allow_html=True)
+        else:
+            st.markdown("<style>div[data-baseweb='popover'] { display: block !important; }</style>", unsafe_allow_html=True)
+
         choice = st.selectbox(
             "Search",
             options=search_options,
