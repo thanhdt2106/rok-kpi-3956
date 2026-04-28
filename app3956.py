@@ -5,12 +5,13 @@ import plotly.graph_objects as go
 # --- 1. CẤU HÌNH TRANG ---
 st.set_page_config(page_title="FTD KPI SYSTEM", layout="wide", initial_sidebar_state="collapsed")
 
-# --- 2. QUẢN LÝ NGÔN NGỮ TRONG SESSION STATE ---
-# Khởi tạo ngôn ngữ mặc định nếu chưa có để tránh reset trang mất dữ liệu
+# --- 2. KHỞI TẠO SESSION STATE (CHỐNG RESET) ---
 if 'lang' not in st.session_state:
     st.session_state.lang = "VN"
+if 'selected_commander' not in st.session_state:
+    st.session_state.selected_commander = ""
 
-# --- 3. DỮ LIỆU PHIÊN DỊCH TOÀN DIỆN ---
+# --- 3. DỮ LIỆU PHIÊN DỊCH ---
 TEXTS = {
     "VN": {
         "header": "HỆ THỐNG KPI - SHARED HOUSE 3956",
@@ -42,13 +43,16 @@ TEXTS = {
     }
 }
 
-# Cập nhật ngôn ngữ khi người dùng bấm chọn
-def change_lang():
-    st.session_state.lang = st.session_state.new_lang
+# Hàm xử lý khi đổi ngôn ngữ hoặc chọn tên
+def on_lang_change():
+    st.session_state.lang = st.session_state.radio_lang
+
+def on_choice_change():
+    st.session_state.selected_commander = st.session_state.search_box
 
 L = TEXTS[st.session_state.lang]
 
-# --- 4. CSS CUSTOM ---
+# --- 4. CSS ---
 st.markdown(f"""
     <style>
     header[data-testid="stHeader"] {{display: none !important;}}
@@ -64,7 +68,6 @@ st.markdown(f"""
     .gauge-footer {{ color: #58a6ff; font-size: 13px; font-weight: 800; text-align: center; margin-top: -35px; }}
     @media (max-width: 768px) {{
         [data-testid="column"] {{ width: 50% !important; flex: 1 1 50% !important; min-width: 50% !important; }}
-        div[data-testid="stHorizontalBlock"] {{ gap: 0px !important; }}
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -87,42 +90,40 @@ def load_data():
         df['D_PCT'] = (df['SUM_DEAD'] / 400_000 * 100).round(1)
         df = df.sort_values(by='K_PCT', ascending=False).reset_index(drop=True)
         df.insert(0, 'H_RAW', range(1, len(df) + 1))
+        df['Search_Display'] = df[c_name] + " (ID: " + df[c_id].astype(str) + ")"
         return df, c_id, c_name, c_pow, c_kill
     except: return None
 
 res = load_data()
 if res:
     df, c_id, c_name, c_pow, c_kill = res
-    
-    # Tiêu đề được dịch theo ngôn ngữ chọn
     st.markdown(f'<div class="main-header">{L["header"]}</div>', unsafe_allow_html=True)
     
     col_lang, col_search = st.columns([1, 4])
     with col_lang:
-        st.radio("L", ["VN", "EN"], key="new_lang", on_change=change_lang, 
-                 index=0 if st.session_state.lang == "VN" else 1, 
-                 horizontal=True, label_visibility="collapsed")
-    
+        st.radio("L", ["VN", "EN"], key="radio_lang", on_change=on_lang_change, 
+                 index=0 if st.session_state.lang == "VN" else 1, horizontal=True, label_visibility="collapsed")
     with col_search:
-        # Danh sách gợi ý hiển thị linh hoạt theo ngôn ngữ
-        df['Search_Display'] = df[c_name] + " (ID: " + df[c_id].astype(str) + ")"
+        # Sử dụng key để Streamlit nhớ giá trị đã chọn sau khi rerun
         choice = st.selectbox("S", options=[""] + df['Search_Display'].tolist(), 
-                              index=0, placeholder=L["placeholder"], label_visibility="collapsed")
+                              key="search_box", on_change=on_choice_change,
+                              placeholder=L["placeholder"], label_visibility="collapsed")
 
     tab1, tab2 = st.tabs([L["tab1"], L["tab2"]])
     
     with tab1:
-        if choice != "":
-            d = df[df['Search_Display'] == choice].iloc[0]
+        current_selection = st.session_state.selected_commander
+        if current_selection != "":
+            d = df[df['Search_Display'] == current_selection].iloc[0]
             
-            # --- 4 HỘP CHỈ SỐ CHÍNH ---
+            # --- 4 HỘP CHỈ SỐ ---
             m1, m2, m3, m4 = st.columns(4)
             m1.markdown(f'<div class="info-box"><div class="info-label">{L["rank"]}</div><div class="info-value" style="color:#FFD700;">#{int(d["H_RAW"])}</div></div>', unsafe_allow_html=True)
             m2.markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>', unsafe_allow_html=True)
             m3.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
             m4.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
             
-            # --- CHI TIẾT (ĐÓNG SẴN) ---
+            # --- CHI TIẾT (LUÔN ĐÓNG KHI CHỌN MỚI) ---
             with st.expander(L["detail_title"], expanded=False):
                 st.markdown(f"**{L['general_stats']}**")
                 c1, c2, c3, c4, c5 = st.columns(5)
@@ -134,7 +135,7 @@ if res:
                 
                 st.markdown(f"**{L['kill_stats']}**")
                 k_cols = st.columns(4)
-                for i, t in enumerate(['T5', 'T4', 'T3', 'T2',]):
+                for i, t in enumerate(['T5', 'T4', 'T3', 'T2']):
                     k_cols[i].markdown(f'<div class="info-box"><div class="info-label">{t} Kill</div><div class="info-value">{int(d[f"Tổng Tiêu Diệt {t}"]):,}</div></div>', unsafe_allow_html=True)
 
                 st.markdown(f"**{L['dead_stats']}**")
