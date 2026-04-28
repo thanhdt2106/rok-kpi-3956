@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
-# --- 1. CẤU HÌNH TRANG & ẨN SIDEBAR ---
+# --- 1. CẤU HÌNH TRANG ---
 st.set_page_config(
     page_title="FTD KPI SYSTEM", 
     layout="wide", 
@@ -46,53 +46,70 @@ texts = {
 }
 L = texts[lang_option]
 
-# --- 3. GIAO DIỆN CSS TỔNG LỰC (ẨN SIDEBAR & LÀM ĐẸP) ---
+# --- 3. GIAO DIỆN CSS TỔNG LỰC (FIX MOBILE + ẨN MỌI THỨ GỐC) ---
 st.markdown(f"""
     <style>
-    /* ẨN SIDEBAR GỐC */
+    /* ẨN SIDEBAR & HEADER GỐC */
     [data-testid="stSidebarNav"] {{display: none;}}
     [data-testid="collapsedControl"] {{display: none;}}
+    header[data-testid="stHeader"] {{display: none !important;}}
+    
+    /* FIX KHOẢNG TRẮNG SAU KHI ẨN HEADER */
+    .block-container {{
+        padding-top: 1.5rem !important;
+        padding-bottom: 1rem !important;
+    }}
+
     .stApp {{ background-color: #0d1117; color: #c9d1d9; }}
     
     /* Header chính */
     .main-header {{ 
         background: linear-gradient(90deg, #00FFFF, #58a6ff); 
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
-        text-align: center; font-size: clamp(28px, 5vw, 42px); font-weight: 900; padding: 20px 0;
+        text-align: center; font-size: clamp(24px, 5vw, 42px); font-weight: 900; padding: 10px 0;
     }}
 
     /* Container cho Profile */
     .info-box {{ 
         background: #161b22; border: 1px solid #30363d; border-radius: 12px; 
-        padding: 15px; text-align: center; margin-bottom: 10px;
+        padding: 12px; text-align: center; margin-bottom: 8px;
     }}
-    .info-label {{ color: #8b949e; font-size: clamp(11px, 2.5vw, 14px); font-weight: bold; text-transform: uppercase; margin-bottom: 8px; }}
-    .info-value {{ color: #ffffff; font-size: clamp(18px, 4vw, 24px); font-weight: 800; }}
+    .info-label {{ color: #8b949e; font-size: clamp(10px, 2.5vw, 13px); font-weight: bold; text-transform: uppercase; }}
+    .info-value {{ color: #ffffff; font-size: clamp(16px, 4vw, 22px); font-weight: 800; }}
 
     /* Gauge Footer */
     .gauge-footer {{ 
-        color: #58a6ff; font-size: clamp(16px, 3.5vw, 20px); font-weight: 800; 
+        color: #58a6ff; font-size: clamp(14px, 3.5vw, 18px); font-weight: 800; 
         text-align: center; margin-top: -30px; padding-bottom: 10px;
     }}
 
     /* Bảng dữ liệu siêu to rõ */
     .big-table-container [data-testid="stDataFrame"] th {{
         background-color: #1f2937 !important; color: #00FFFF !important;
-        font-size: 20px !important; font-weight: 900 !important;
+        font-size: 18px !important; font-weight: 900 !important;
     }}
     .big-table-container [data-testid="stDataFrame"] td {{
-        font-size: 19px !important; font-weight: 600 !important;
+        font-size: 17px !important; font-weight: 600 !important;
     }}
 
-    /* Responsive cho Mobile */
+    /* --- QUAN TRỌNG: FIX KHUNG CHO ĐIỆN THOẠI (2 CỘT) --- */
     @media (max-width: 768px) {{
-        [data-testid="column"] {{ width: 50% !important; flex: 1 1 45% !important; }}
-        .main-header {{ font-size: 26px; }}
+        [data-testid="column"] {{
+            width: 48% !important; 
+            flex: 1 1 45% !important;
+            min-width: 45% !important;
+        }}
+        /* Cân đối lại khoảng cách cho mobile */
+        div[data-testid="stHorizontalBlock"] {{
+            gap: 5px !important;
+            display: flex;
+            flex-wrap: wrap;
+        }}
     }}
     </style>
 """, unsafe_allow_html=True)
 
-# --- 4. DATA ENGINE ---
+# --- 4. DATA ENGINE (Giữ nguyên logic của bạn) ---
 SHEET_ID = '1MJQSE3siwFWmQNdJmbbJ6RsilvcoxWTu-r6h-UdHugE'
 URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=351056493'
 
@@ -131,14 +148,14 @@ if res:
         sel = st.selectbox(L["select_player"], df[c_name].unique())
         d = df[df[c_name] == sel].iloc[0]
         
-        # --- TOP 4 BIG BOXES ---
+        # --- TOP 4 BIG BOXES (2 cột trên mobile) ---
         m1, m2, m3, m4 = st.columns(4)
         m1.markdown(f'<div class="info-box"><div class="info-label">{L["rank"]}</div><div class="info-value" style="color:#FFD700;">#{int(d["H_RAW"])}</div></div>', unsafe_allow_html=True)
         m2.markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>', unsafe_allow_html=True)
         m3.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
         m4.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
         
-        # --- EXPANDER THÔNG SỐ ---
+        # --- EXPANDER THÔNG SỐ (10 ô thông tin) ---
         with st.expander(L["detail_title"], expanded=False):
             box_map = [
                 (L["map_id"], "ID nhân vật"), (L["map_name"], c_name), 
@@ -151,18 +168,18 @@ if res:
             for idx, (label, col_key) in enumerate(box_map):
                 val = d[col_key] if col_key in d else 0
                 txt_val = f"{int(val):,}" if isinstance(val, (int, float)) else val
-                det_cols[idx % 5].markdown(f'<div class="info-box" style="margin-top:10px;"><div class="info-label">{label}</div><div class="info-value" style="font-size:16px;">{txt_val}</div></div>', unsafe_allow_html=True)
+                det_cols[idx % 5].markdown(f'<div class="info-box" style="margin-top:10px;"><div class="info-label">{label}</div><div class="info-value" style="font-size:15px;">{txt_val}</div></div>', unsafe_allow_html=True)
 
-        # --- GAUGE CHARTS ---
+        # --- GAUGE CHARTS (KPI Vòng tròn) ---
         g1, g2 = st.columns(2)
         with g1:
-            fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], number={'suffix': "%", 'font':{'size':45}}, gauge={'axis': {'range': [0, 100]}, 'bar': {'color': "#00FFFF"}}))
-            fig_k.update_layout(height=300, margin=dict(l=30,r=30,t=50,b=20), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
+            fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], number={'suffix': "%", 'font':{'size':40}}, gauge={'axis': {'range': [0, 100]}, 'bar': {'color': "#00FFFF"}}))
+            fig_k.update_layout(height=280, margin=dict(l=20,r=20,t=40,b=20), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
             st.plotly_chart(fig_k, use_container_width=True, config={'displayModeBar': False})
             st.markdown(f'<div class="gauge-footer">{L["target_kill"]}: {d[c_kill]/1e6:.1f}M / 300M</div>', unsafe_allow_html=True)
         with g2:
-            fig_d = go.Figure(go.Indicator(mode="gauge+number", value=d['D_PCT'], number={'suffix': "%", 'font':{'size':45}}, gauge={'axis': {'range': [0, 100]}, 'bar': {'color': "#f29b05"}}))
-            fig_d.update_layout(height=300, margin=dict(l=30,r=30,t=50,b=20), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
+            fig_d = go.Figure(go.Indicator(mode="gauge+number", value=d['D_PCT'], number={'suffix': "%", 'font':{'size':40}}, gauge={'axis': {'range': [0, 100]}, 'bar': {'color': "#f29b05"}}))
+            fig_d.update_layout(height=280, margin=dict(l=20,r=20,t=40,b=20), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
             st.plotly_chart(fig_d, use_container_width=True, config={'displayModeBar': False})
             st.markdown(f'<div class="gauge-footer">{L["target_dead"]}: {int(d["SUM_DEAD"]):,} / 400K</div>', unsafe_allow_html=True)
 
@@ -174,13 +191,13 @@ if res:
         c_kpi_d = L['col_kpi_dead']
         v_df.columns = [L['col_rank'], L['col_name'], L['col_power'], L['col_kill'], c_kpi_k, L['col_dead'], c_kpi_d]
         
-        # Style Bảng: Số có dấu phẩy, KPI có %
+        # Định dạng style bảng
         styled_df = v_df.style.format({
             L['col_power']: '{:,.0f}', L['col_kill']: '{:,.0f}', L['col_dead']: '{:,.0f}',
             c_kpi_k: '{:.1f}%', c_kpi_d: '{:.1f}%'
         })
         
-        # Highlight ai đạt 100% màu xanh lá sáng
+        # Highlight KPI đạt trên 100% màu xanh lá
         styled_df = styled_df.map(lambda x: 'color: #00FF00;' if isinstance(x, (float, int)) and x >= 100 else '', subset=[c_kpi_k, c_kpi_d])
         
         st.dataframe(styled_df, use_container_width=True, height=800)
