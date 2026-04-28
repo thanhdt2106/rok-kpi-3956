@@ -50,12 +50,7 @@ L = TEXTS[st.session_state.lang]
 
 # --- 5. CSS CUSTOM (FIX KHOẢNG ĐEN & STICKY SEARCH) ---
 st.markdown(f"""
-    <style>
-    /* Ẩn header mặc định và xóa khoảng trắng đỉnh */
-    header[data-testid="stHeader"] {{display: none !important;}}
-    .block-container {{ padding-top: 0px !important; padding-bottom: 0px !important; }}
-    
-    .stApp {{ background-color: #0d1117; color: #c9d1d9; }}
+
     
     /* Sticky Header: Giữ thanh search luôn ở đỉnh khi cuộn hoặc hiện bàn phím */
     .sticky-nav {{
