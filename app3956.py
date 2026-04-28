@@ -21,6 +21,8 @@ TEXTS = {
         "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT", 
         "target_kill": "ĐẠT: ", "target_dead": "ĐẠT: ",
         "general_stats": "📊 TỔNG QUÁT", "kill_stats": "⚔️ KILL", "dead_stats": "💀 DEAD", "rss_stats": "🌾 THU NHẬP",
+        "col_rank": "HẠNG 🏆", "col_name": "CHIẾN BINH 🥷", "col_power": "SỨC MẠNH 🛡️",
+        "col_kill": "ĐIỂM KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "LÍNH CHẾT 💀", "col_kpi_dead": "KPI DEAD ⚰️",
         "id_label": "ID", "name_label": "Tên"
     },
     "EN": {
@@ -31,6 +33,8 @@ TEXTS = {
         "detail_title": "📌 FULL STATISTICS", 
         "target_kill": "REACHED: ", "target_dead": "REACHED: ",
         "general_stats": "📊 GENERAL", "kill_stats": "⚔️ KILL", "dead_stats": "💀 DEAD", "rss_stats": "🌾 GATHERED",
+        "col_rank": "RANK 🏆", "col_name": "COMMANDER 🥷", "col_power": "POWER 🛡️",
+        "col_kill": "KILL POINTS ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "DEAD UNITS 💀", "col_kpi_dead": "KPI DEAD ⚰️",
         "id_label": "ID", "name_label": "Name"
     }
 }
@@ -48,25 +52,29 @@ def sync_search_callback():
 
 L = TEXTS[st.session_state.lang]
 
-# --- 5. CSS CUSTOM (FIX KHOẢNG ĐEN & STICKY SEARCH) ---
-st.markdown(f""
-
+# --- 5. CSS CUSTOM (FIXED & OPTIMIZED) ---
+st.markdown(f"""
+    <style>
+    /* Ẩn header mặc định và xóa khoảng trắng đỉnh */
+    header[data-testid="stHeader"] {{display: none !important;}}
+    .block-container {{ padding-top: 5px !important; padding-bottom: 0px !important; }}
     
-    /* Sticky Header: Giữ thanh search luôn ở đỉnh khi cuộn hoặc hiện bàn phím */
-    .sticky-nav {{
-        position: -webkit-sticky;
+    .stApp {{ background-color: #0d1117; color: #c9d1d9; }}
+    
+    /* Sticky Header: Giữ thanh search luôn ở đỉnh */
+    [data-testid="stVerticalBlock"] > div:first-child {{
         position: sticky;
         top: 0;
+        z-index: 999;
         background-color: #0d1117;
-        z-index: 1000;
-        padding: 10px 0;
-        border-bottom: 1px solid #30363d;
+        padding-top: 10px;
+        padding-bottom: 10px;
     }}
     
     .main-header {{ 
         background: linear-gradient(90deg, #00FFFF, #58a6ff); 
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
-        text-align: center; font-size: 24px; font-weight: 900;
+        text-align: center; font-size: 24px; font-weight: 900; margin-bottom: 5px;
     }}
     
     .info-box {{ background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; }}
@@ -74,10 +82,10 @@ st.markdown(f""
     .info-value {{ color: #ffffff; font-size: 16px; font-weight: 800; }}
     .gauge-footer {{ color: #58a6ff; font-size: 13px; font-weight: 800; text-align: center; margin-top: -35px; }}
     
-    /* Thu nhỏ tabs trên mobile */
+    /* Tối ưu tabs */
     button[data-baseweb="tab"] {{ padding: 10px 15px !important; }}
     </style>
-"", unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # --- 6. DATA ENGINE ---
 @st.cache_data(ttl=5)
@@ -134,7 +142,7 @@ if res:
             m[2].markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
             m[3].markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
             
-            # --- CHI TIẾT THÔNG SỐ (Bổ sung T1-T5 và RSS) ---
+            # --- CHI TIẾT THÔNG SỐ ---
             with st.expander(L["detail_title"], expanded=False):
                 st.markdown(f"**{L['general_stats']}**")
                 g = st.columns(3)
