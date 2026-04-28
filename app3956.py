@@ -133,22 +133,32 @@ if res:
         m4.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
         
         # --- DETAILED PROFILE (10 BOXES) ---
-        st.markdown(L["detail_title"])
-        box_map = [
-            (L["map_id"], "ID nhân vật"), (L["map_name"], c_name), 
-            (L["map_pow"], c_pow), (L["map_record"], "Kỷ Lục Sức Mạnh"),
-            (L["map_t5_d"], "T5 tử vong"), (L["map_t4_d"], "T4 tử vong"),
-            (L["map_t3_d"], "T3 tử vong"), (L["map_kill"], c_kill),
-            (L["map_t5_k"], "Tổng Tiêu Diệt T5"), (L["map_t4_k"], "Tổng Tiêu Diệt T4")
-        ]
-        
-        # Chia 5 cột cho PC, tự động xuống hàng cho Mobile
-        det_cols = st.columns(5)
-        for idx, (label, col_key) in enumerate(box_map):
-            val = d[col_key] if col_key in d else 0
-            txt_val = f"{int(val):,}" if isinstance(val, (int, float)) else val
-            det_cols[idx % 5].markdown(f'<div class="info-box"><div class="info-label">{label}</div><div class="info-value" style="font-size:16px;">{txt_val}</div></div>', unsafe_allow_html=True)
-
+      # --- THÔNG SỐ CHI TIẾT DẠNG ĐÓNG MỞ (EXPANDER) ---
+        with st.expander(L["detail_title"], expanded=False): # expanded=False để mặc định là đóng
+            box_map = [
+                (L["map_id"], "ID nhân vật"), (L["map_name"], c_name), 
+                (L["map_pow"], c_pow), (L["map_record"], "Kỷ Lục Sức Mạnh"),
+                (L["map_t5_d"], "T5 tử vong"), (L["map_t4_d"], "T4 tử vong"),
+                (L["map_t3_d"], "T3 tử vong"), (L["map_kill"], c_kill),
+                (L["map_t5_k"], "Tổng Tiêu Diệt T5"), (L["map_t4_k"], "Tổng Tiêu Diệt T4")
+            ]
+            
+            # Chia 5 cột cho PC bên trong expander
+            det_cols = st.columns(5)
+            for idx, (label, col_key) in enumerate(box_map):
+                val = d[col_key] if col_key in d else 0
+                txt_val = f"{int(val):,}" if isinstance(val, (int, float)) else val
+                
+                # Hiển thị box
+                det_cols[idx % 5].markdown(
+                    f'''
+                    <div class="info-box" style="margin-top: 10px;">
+                        <div class="info-label">{label}</div>
+                        <div class="info-value" style="font-size:16px;">{txt_val}</div>
+                    </div>
+                    ''', 
+                    unsafe_allow_html=True
+                )
         # --- GAUGE CHARTS ---
         g1, g2 = st.columns(2)
         with g1:
