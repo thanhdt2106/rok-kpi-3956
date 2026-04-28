@@ -92,7 +92,7 @@ def load_and_process():
             return None
 
         c_name = find_col(['Tên Người Dùng', 'Tên'])
-        c_kyluc = find_col(['Kỷ Lực Sức Mạnh', 'Kỷ Lực'])
+        c_kyluc = find_col(['Kỷ Lục Sức Mạnh', 'Kỷ Lục'])
         c_kill = find_col(['Tổng Điểm Tiêu Diệt', 'Tổng Tiêu'])
         
         # Ép kiểu số
