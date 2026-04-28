@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 # --- 1. CẤU HÌNH TRANG ---
 st.set_page_config(page_title="FTD KPI SYSTEM", layout="wide")
 
-# --- 2. GIAO DIỆN CSS (DARK MODE) ---
+# --- 2. GIAO DIỆN CSS (ICON & BOX GRID) ---
 st.markdown("""
     <style>
     .stApp { background-color: #0d1117; color: #c9d1d9; }
@@ -13,12 +13,19 @@ st.markdown("""
         color: #58a6ff; text-align: center; font-size: 28px; font-weight: bold;
         padding: 10px; border-bottom: 1px solid #30363d; margin-bottom: 20px;
     }
-    .stat-box {
-        background: #161b22; border: 1px solid #30363d; border-radius: 10px;
-        padding: 15px; text-align: center; height: 100%;
+    /* Grid Profile */
+    .info-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
     }
-    .stat-label { color: #8b949e; font-size: 13px; font-weight: bold; text-transform: uppercase; }
-    .stat-value { color: #ffffff; font-size: 22px; font-weight: bold; margin-top: 8px; }
+    .info-box {
+        background: #161b22; border: 1px solid #30363d; border-radius: 10px;
+        padding: 15px; text-align: center;
+    }
+    .info-label { color: #8b949e; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+    .info-value { color: #ffffff; font-size: 18px; font-weight: bold; margin-top: 8px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -33,24 +40,23 @@ def load_data():
         df = pd.read_csv(URL)
         df.columns = [str(c).strip() for c in df.columns]
         
-        # Danh sách cột cần chuyển sang số
-        numeric_cols = ['Sức Mạnh', 'T5 tử vong', 'T4 tử vong', 'T3 tử vong', 'T2 tử vong', 
-                        'Tổng Điểm Tiêu Diệt', 'Tài Nguyên Thu Thập', 'Tổng Tiêu Diệt T5', 
-                        'Tổng Tiêu Diệt T4', 'Tổng Tiêu Diệt T3', 'Tổng Tiêu Diệt T2', 'Hỗ Trợ Liên Minh']
-        
+        # Chuyển đổi toàn bộ cột số liệu
+        numeric_cols = df.columns.drop(['Tên Người Dùng', 'ID nhân vật'])
         for col in numeric_cols:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
-        # A. TÍNH ĐIỂM DEAD THEO TRỌNG SỐ POWER (Yêu cầu mới)
-        # T5=10, T4=4, T3-T2=1
-        df['DEAD_KPI_SCORE'] = (df['T5 tử vong'] * 10) + (df['T4 tử vong'] * 4) + \
-                               (df['T3 tử vong'] * 1) + (df['T2 tử vong'] * 1)
+        # A. TÍNH ĐIỂM DEAD THEO TRỌNG SỐ POWER MỚI
+        # T5=10, T4=4, T3=3, T2=2, T1=1
+        df['DEAD_POWER_SCORE'] = (df['T5 tử vong'] * 10) + \
+                                 (df['T4 tử vong'] * 4) + \
+                                 (df['T3 tử vong'] * 3) + \
+                                 (df['T2 tử vong'] * 2) + \
+                                 (df['T1 tử vong'] * 1)
         
-        # B. TÍNH KPI TỔNG ĐỂ XẾP HẠNG (Kill + Dead Power)
-        df['TOTAL_KPI'] = df['Tổng Điểm Tiêu Diệt'] + df['DEAD_KPI_SCORE']
+        # B. TÍNH KPI TỔNG (Kill + Dead Power)
+        df['TOTAL_KPI'] = df['Tổng Điểm Tiêu Diệt'] + df['DEAD_POWER_SCORE']
         
-        # C. SẮP XẾP RANK
+        # C. SẮP XẾP RANK THEO KPI
         df = df.sort_values(by='TOTAL_KPI', ascending=False).reset_index(drop=True)
         df.insert(0, 'RANK', df.index + 1)
         
@@ -72,59 +78,67 @@ if df is not None:
         if sel:
             d = df[df['Tên Người Dùng'] == sel].iloc[0]
             
-            # --- ROW 1: CÁC Ô CHỈ SỐ (BOX) ---
             st.markdown(f"### 🎖️ {sel} (RANK #{int(d['RANK'])})")
-            c1, c2, c3, c4, c5 = st.columns(5)
-            with c1:
-                st.markdown(f'<div class="stat-box"><div class="stat-label">ID</div><div class="stat-value">🆔 {d["ID nhân vật"]}</div></div>', unsafe_allow_html=True)
-            with c2:
-                st.markdown(f'<div class="stat-box"><div class="stat-label">SỨC MẠNH</div><div class="stat-value">⚡ {int(d["Sức Mạnh"]):,}</div></div>', unsafe_allow_html=True)
-            with c3:
-                st.markdown(f'<div class="stat-box"><div class="stat-label">KILL (+)</div><div class="stat-value">⚔️ {int(d["Tổng Điểm Tiêu Diệt"]):,}</div></div>', unsafe_allow_html=True)
-            with c4:
-                st.markdown(f'<div class="stat-box"><div class="stat-label">DEAD (POWER)</div><div class="stat-value">🩸 {int(d["DEAD_KPI_SCORE"]):,}</div></div>', unsafe_allow_html=True)
-            with c5:
-                st.markdown(f'<div class="stat-box"><div class="stat-label">TÀI NGUYÊN</div><div class="stat-value">📦 {int(d["Tài Nguyên Thu Thập"]):,}</div></div>', unsafe_allow_html=True)
+            
+            # --- HIỂN THỊ DẠNG Ô BOX CÓ ICON CHO TẤT CẢ THÔNG TIN ---
+            # Nhóm 1: Thông tin cơ bản
+            st.write("**📌 THÔNG TIN CƠ BẢN**")
+            c1, c2, c3, c4 = st.columns(4)
+            c1.markdown(f'<div class="info-box"><div class="info-label">ID</div><div class="info-value">🆔 {d["ID nhân vật"]}</div></div>', unsafe_allow_html=True)
+            c2.markdown(f'<div class="info-box"><div class="info-label">SỨC MẠNH</div><div class="info-value">⚡ {int(d["Sức Mạnh"]):,}</div></div>', unsafe_allow_html=True)
+            c3.markdown(f'<div class="info-box"><div class="info-label">KỶ LỤC POW</div><div class="info-value">🏆 {int(d["Kỷ Lực Sức Mạnh"]):,}</div></div>', unsafe_allow_html=True)
+            c4.markdown(f'<div class="info-box"><div class="info-label">TÀI NGUYÊN</div><div class="info-value">📦 {int(d["Tài Nguyên Thu Thập"]):,}</div></div>', unsafe_allow_html=True)
 
-            # --- ROW 2: VÒNG TRÒN TIẾN ĐỘ ---
-            st.write("")
+            # Nhóm 2: Chỉ số Tiêu diệt
+            st.write("**⚔️ CHỈ SỐ TIÊU DIỆT**")
+            k1, k2, k3, k4 = st.columns(4)
+            k1.markdown(f'<div class="info-box"><div class="info-label">TỔNG ĐIỂM KILL</div><div class="info-value">🔥 {int(d["Tổng Điểm Tiêu Diệt"]):,}</div></div>', unsafe_allow_html=True)
+            k2.markdown(f'<div class="info-box"><div class="info-label">KILL T5</div><div class="info-value">🎖️ {int(d["Tổng Tiêu Diệt T5"]):,}</div></div>', unsafe_allow_html=True)
+            k3.markdown(f'<div class="info-box"><div class="info-label">KILL T4</div><div class="info-value">⚔️ {int(d["Tổng Tiêu Diệt T4"]):,}</div></div>', unsafe_allow_html=True)
+            k4.markdown(f'<div class="info-box"><div class="info-label">HỖ TRỢ LM</div><div class="info-value">🤝 {int(d["Hỗ Trợ Liên Minh"]):,}</div></div>', unsafe_allow_html=True)
+
+            # Nhóm 3: Chỉ số Tử vong (Dead Power)
+            st.write("**🩸 CHỈ SỐ TỬ VONG (TRỌNG SỐ)**")
+            d1, d2, d3, d4, d5 = st.columns(5)
+            d1.markdown(f'<div class="info-box"><div class="info-label">T5 DEAD (x10)</div><div class="info-value">💀 {int(d["T5 tử vong"]):,}</div></div>', unsafe_allow_html=True)
+            d2.markdown(f'<div class="info-box"><div class="info-label">T4 DEAD (x4)</div><div class="info-value">💀 {int(d["T4 tử vong"]):,}</div></div>', unsafe_allow_html=True)
+            d3.markdown(f'<div class="info-box"><div class="info-label">T3 DEAD (x3)</div><div class="info-value">💀 {int(d["T3 tử vong"]):,}</div></div>', unsafe_allow_html=True)
+            d4.markdown(f'<div class="info-box"><div class="info-label">T2 DEAD (x2)</div><div class="info-value">💀 {int(d["T2 tử vong"]):,}</div></div>', unsafe_allow_html=True)
+            d5.markdown(f'<div class="info-box"><div class="info-label">T1 DEAD (x1)</div><div class="info-value">💀 {int(d["T1 tử vong"]):,}</div></div>', unsafe_allow_html=True)
+
+            # --- VÒNG TRÒN KPI ---
+            st.write("---")
             ck1, ck2 = st.columns(2)
             with ck1:
+                # KPI không giới hạn 100% (Để Gauge max là mức cao nhất của team hiện tại)
                 fig_k = go.Figure(go.Indicator(
                     mode = "gauge+number", value = d['Tổng Điểm Tiêu Diệt'],
                     title = {'text': "TIẾN ĐỘ TIÊU DIỆT", 'font': {'color': '#58a6ff'}},
-                    gauge = {'axis': {'range': [0, df['Tổng Điểm Tiêu Diệt'].max()]}, 'bar': {'color': "#58a6ff"}}
+                    gauge = {'axis': {'range': [0, df['Tổng Điểm Tiêu Diệt'].max()*1.2]}, 'bar': {'color': "#58a6ff"}}
                 ))
-                fig_k.update_layout(paper_bgcolor='rgba(0,0,0,0)', height=300)
                 st.plotly_chart(fig_k, use_container_width=True)
             
             with ck2:
                 fig_d = go.Figure(go.Indicator(
-                    mode = "gauge+number", value = d['DEAD_KPI_SCORE'],
+                    mode = "gauge+number", value = d['DEAD_POWER_SCORE'],
                     title = {'text': "TIẾN ĐỘ TỬ VONG (POWER)", 'font': {'color': '#ff4b4b'}},
-                    gauge = {'axis': {'range': [0, df['DEAD_KPI_SCORE'].max()]}, 'bar': {'color': "#ff4b4b"}}
+                    gauge = {'axis': {'range': [0, df['DEAD_POWER_SCORE'].max()*1.2]}, 'bar': {'color': "#ff4b4b"}}
                 ))
-                fig_d.update_layout(paper_bgcolor='rgba(0,0,0,0)', height=300)
                 st.plotly_chart(fig_d, use_container_width=True)
 
-            # --- ROW 3: ĐẦY ĐỦ TẤT CẢ CỘT ---
-            with st.expander("📝 CHI TIẾT TẤT CẢ CHỈ SỐ TỪ SHEET"):
-                # Hiển thị tất cả các cột của dòng đó
-                st.table(d.to_frame().T)
-
     with tab2:
-        st.subheader("🏆 BẢNG XẾP HẠNG KPI TỔNG")
-        # Chỉ lấy các cột cần thiết để bảng gọn gàng
-        view_df = df[['RANK', 'ID nhân vật', 'Tên Người Dùng', 'Sức Mạnh', 'Tổng Điểm Tiêu Diệt', 'DEAD_KPI_SCORE', 'TOTAL_KPI', 'Tài Nguyên Thu Thập']]
+        st.subheader("🏆 BẢNG XẾP HẠNG CHIẾN DỊCH")
+        # Bảng hiển thị có cột KPI Tổng ở cuối cùng
+        view_df = df[['RANK', 'ID nhân vật', 'Tên Người Dùng', 'Sức Mạnh', 'Tổng Điểm Tiêu Diệt', 'DEAD_POWER_SCORE', 'Tài Nguyên Thu Thập', 'TOTAL_KPI']]
         
-        # Định dạng hiển thị số cho đẹp mà không dùng background_gradient (để tránh lỗi matplotlib)
+        # Định dạng hiển thị
         st.dataframe(
             view_df.style.format({
                 'Sức Mạnh': '{:,.0f}',
                 'Tổng Điểm Tiêu Diệt': '{:,.0f}',
-                'DEAD_KPI_SCORE': '{:,.0f}',
-                'TOTAL_KPI': '{:,.0f}',
-                'Tài Nguyên Thu Thập': '{:,.0f}'
+                'DEAD_POWER_SCORE': '{:,.0f}',
+                'Tài Nguyên Thu Thập': '{:,.0f}',
+                'TOTAL_KPI': '{:,.0f}'
             }),
             use_container_width=True, height=600
         )
