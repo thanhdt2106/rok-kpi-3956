@@ -2,22 +2,69 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
-# --- 1. CẤU HÌNH ---
-st.set_page_config(page_title="FTD KPI SYSTEM", layout="wide")
+# --- 1. CẤU HÌNH GIAO DIỆN ---
+st.set_page_config(page_title="SHARED HOUSE 3956 KPI", layout="wide", initial_sidebar_state="collapsed")
 
-# --- 2. CSS CUSTOM ---
+# --- 2. CSS CUSTOM (ẨN SIDEBAR & LÀM TO SỐ LIỆU) ---
 st.markdown("""
     <style>
+    /* Ẩn Sidebar và các thành phần thừa */
+    [data-testid="stSidebar"] {display: none;}
+    [data-testid="stHeader"] {background: rgba(0,0,0,0);}
+    
+    /* Nền ứng dụng */
     .stApp { background-color: #0d1117; color: #c9d1d9; }
-    .main-header { color: #00FFFF; text-align: center; font-size: 30px; font-weight: bold; padding: 10px; border-bottom: 2px solid #58a6ff; margin-bottom: 20px; }
-    .info-box { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 10px; text-align: center; margin-bottom: 5px; }
-    .info-label { color: #8b949e; font-size: 11px; font-weight: bold; }
-    .info-value { color: #ffffff; font-size: 14px; font-weight: bold; }
-    .target-footer { color: #58a6ff; font-size: 16px; font-weight: bold; text-align: center; margin-top: -20px; }
+    
+    /* Header chính */
+    .main-header { 
+        color: #00FFFF; 
+        text-align: center; 
+        font-size: 40px; 
+        font-weight: 800; 
+        padding: 20px; 
+        text-shadow: 2px 2px 10px #00FFFF55;
+    }
+
+    /* Thẻ thông tin (Big Numbers) */
+    .info-card {
+        background: linear-gradient(145deg, #161b22, #1c2128);
+        border: 1px solid #30363d;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .info-label { 
+        color: #8b949e; 
+        font-size: 16px; 
+        font-weight: bold; 
+        text-transform: uppercase; 
+        letter-spacing: 1px;
+    }
+    .info-value { 
+        color: #ffffff; 
+        font-size: 32px; 
+        font-weight: 800; 
+        margin-top: 10px;
+    }
+    .rank-value { color: #f29b05; font-size: 40px; }
+    
+    /* Footer mục tiêu */
+    .target-footer { 
+        background: #161b22;
+        padding: 10px;
+        border-radius: 8px;
+        color: #58a6ff; 
+        font-size: 20px; 
+        font-weight: bold; 
+        text-align: center; 
+        margin-top: -30px;
+        border: 1px dashed #30363d;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. LOGIC TÍNH TOÁN ---
+# --- 3. LOGIC TÍNH TOÁN KPI ---
 def get_targets(pow_val):
     p_mil = pow_val / 1_000_000
     if p_mil < 15: return 100_000_000, 200_000
@@ -25,105 +72,118 @@ def get_targets(pow_val):
     elif p_mil < 30: return 250_000_000, 300_000
     else: return 300_000_000, 400_000
 
-# --- 4. DATA ENGINE ---
+# --- 4. ENGINE TẢI DỮ LIỆU ---
 SHEET_ID = '1MJQSE3siwFWmQNdJmbbJ6RsilvcoxWTu-r6h-UdHugE'
 URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=351056493'
 
-@st.cache_data(ttl=10)
-def load_and_process():
+@st.cache_data(ttl=5)
+def load_data():
     try:
         df = pd.read_csv(URL)
-        df.columns = [str(c).replace('\n', ' ').strip() for c in df.columns]
+        df.columns = [str(c).strip() for c in df.columns]
         
-        # Dò cột tự động
-        def find_col(keys):
-            for c in df.columns:
-                if any(k.lower() in c.lower() for k in keys): return c
+        # Tìm cột thông minh
+        def find_col(keywords):
+            for col in df.columns:
+                if any(k.lower() in col.lower() for k in keywords): return col
             return None
 
-        c_name = find_col(['Tên Người Dùng', 'Tên'])
-        c_kyluc = find_col(['Kỷ Lục Sức Mạnh', 'Kỷ Lục'])
-        c_kill = find_col(['Tổng Điểm Tiêu Diệt', 'Tổng Tiêu'])
-        
-        # Ép kiểu số
-        for col in df.columns:
-            if col != c_name:
-                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+        C_NAME = find_col(['Tên Người Dùng', 'User'])
+        C_POW_MAX = find_col(['Kỷ Lực', 'Max Power'])
+        C_POW_NOW = find_col(['Sức Mạnh', 'Current Power'])
+        C_KILL = find_col(['Tổng Điểm Tiêu Diệt', 'Total Kill'])
+        C_DEAD_LIST = [c for c in df.columns if 'tử vong' in c.lower()]
 
-        # Tính toán Dead & KPI
-        dead_cols = ['T5 tử vong', 'T4 tử vong', 'T3 tử vong', 'T2 tử vong', 'T1 tử vong']
-        df['SUM_DEAD'] = df[dead_cols].sum(axis=1)
-        
-        targets = df[c_kyluc].apply(get_targets)
+        # Ép kiểu số
+        numeric_cols = [C_POW_MAX, C_POW_NOW, C_KILL] + C_DEAD_LIST
+        for col in numeric_cols:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+
+        # Tính toán
+        df['SUM_DEAD'] = df[C_DEAD_LIST].sum(axis=1)
+        targets = df[C_POW_MAX].apply(get_targets)
         df['T_KILL'] = [x[0] for x in targets]
         df['T_DEAD'] = [x[1] for x in targets]
         
-        # Phần trăm và Tổng điểm xếp hạng
-        df['K_PCT'] = (df[c_kill] / df['T_KILL'] * 100).clip(upper=200)
-        df['D_PCT'] = (df['SUM_DEAD'] / df['T_DEAD'] * 100).clip(upper=200)
-        df['TOTAL_KPI_SCORE'] = (df['K_PCT'] + df['D_PCT']) / 2
+        df['K_PCT'] = (df[C_KILL] / df['T_KILL'] * 100).fillna(0).round(1)
+        df['D_PCT'] = (df['SUM_DEAD'] / df['T_DEAD'] * 100).fillna(0).round(1)
+        df['TOTAL_KPI'] = ((df['K_PCT'] + df['D_PCT']) / 2).round(1)
         
-        # Xếp hạng
-        df = df.sort_values('TOTAL_KPI_SCORE', ascending=False)
-        df.insert(0, 'RANK', range(1, len(df) + 1))
+        df = df.sort_values(by='TOTAL_KPI', ascending=False).reset_index(drop=True)
+        df.insert(0, 'RANK', df.index + 1)
         
-        return df, c_name, c_kyluc, c_kill
+        return df, C_NAME, C_POW_MAX, C_POW_NOW, C_KILL
     except Exception as e:
         st.error(f"Lỗi: {e}")
         return None
 
-# --- 5. GIAO DIỆN ---
-res = load_and_process()
+# --- 5. GIAO DIỆN CHÍNH ---
+res = load_data()
 if res:
-    df, c_name, c_kyluc, c_kill = res
-    st.markdown('<div class="main-header">SHARED HOUSE 3956 - KPI MANAGEMENT</div>', unsafe_allow_html=True)
+    df, C_NAME, C_POW_MAX, C_POW_NOW, C_KILL = res
+    st.markdown('<div class="main-header">SHARED HOUSE 3956 KPI SYSTEM</div>', unsafe_allow_html=True)
     
-    tab1, tab2, tab3 = st.tabs(["👤 PROFILE CHI TIẾT", "📊 TỔNG QUAN QUÂN ĐOÀN", "🏆 BẢNG VINH DANH (>100%)"])
+    # Khu vực chọn chiến binh (To và rõ)
+    selected_user = st.selectbox("🔍 CHỌN CHIẾN BINH ĐỂ XEM CHI TIẾT:", df[C_NAME].tolist(), index=0)
     
-    # --- TAB 1: PROFILE ---
-    with tab1:
-        sel = st.selectbox("🔍 CHỌN CHIẾN BINH:", df[c_name].unique())
-        if sel:
-            d = df[df[c_name] == sel].iloc[0]
+    if selected_user:
+        d = df[df[C_NAME] == selected_user].iloc[0]
+        st.write("") 
+        
+        # --- HÀNG 1: CÁC CON SỐ KHỔNG LỒ ---
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            st.markdown(f'''<div class="info-card">
+                <div class="info-label">🏆 XẾP HẠNG</div>
+                <div class="info-value rank-value">#{int(d["RANK"])}</div>
+            </div>''', unsafe_allow_html=True)
+        with c2:
+            st.markdown(f'''<div class="info-card">
+                <div class="info-label">⭐ KỶ LỤC POW</div>
+                <div class="info-value">{int(d[C_POW_MAX]):,}</div>
+            </div>''', unsafe_allow_html=True)
+        with c3:
+            st.markdown(f'''<div class="info-card">
+                <div class="info-label">💪 POW HIỆN TẠI</div>
+                <div class="info-value">{int(d[C_POW_NOW]):,}</div>
+            </div>''', unsafe_allow_html=True)
+        with c4:
+            st.markdown(f'''<div class="info-card">
+                <div class="info-label">💀 TỔNG TỬ VONG</div>
+                <div class="info-value">{int(d["SUM_DEAD"]):,}</div>
+            </div>''', unsafe_allow_html=True)
+
+        st.write("---")
+        
+        # --- HÀNG 2: BIỂU ĐỒ KPI ---
+        g1, g2 = st.columns(2)
+        with g1:
+            fig_k = go.Figure(go.Indicator(
+                mode="gauge+number", value=d['K_PCT'], number={'suffix': "%", 'font': {'size': 60}},
+                title={'text': "KPI TIÊU DIỆT", 'font': {'size': 24, 'color': '#00FFFF'}},
+                gauge={'axis': {'range': [0, 100], 'tickwidth': 1}, 
+                       'bar': {'color': "#00FFFF"},
+                       'steps': [{'range': [0, 50], 'color': '#161b22'}, {'range': [50, 100], 'color': '#1c2128'}]}))
+            fig_k.update_layout(height=400, paper_bgcolor="rgba(0,0,0,0)", font={'color': "white", 'family': "Arial"})
+            st.plotly_chart(fig_k, use_container_width=True)
+            st.markdown(f'<div class="target-footer">MỤC TIÊU: {int(d["T_KILL"]):,} KILL</div>', unsafe_allow_html=True)
             
-            # Hiển thị tất cả các cột từ Sheet dưới dạng thẻ nhỏ
-            st.write("📌 **THÔNG SỐ CHI TIẾT TỪ SHEET**")
-            cols = st.columns(6)
-            for i, column in enumerate(df.columns[1:13]): # Lấy 12 cột đầu tiên để hiển thị thẻ
-                with cols[i % 6]:
-                    val = f"{int(d[column]):,}" if isinstance(d[column], (int, float)) else d[column]
-                    st.markdown(f'<div class="info-box"><div class="info-label">{column}</div><div class="info-value">{val}</div></div>', unsafe_allow_html=True)
+        with g2:
+            fig_d = go.Figure(go.Indicator(
+                mode="gauge+number", value=d['D_PCT'], number={'suffix': "%", 'font': {'size': 60}},
+                title={'text': "KPI TỬ VONG", 'font': {'size': 24, 'color': '#f29b05'}},
+                gauge={'axis': {'range': [0, 100], 'tickwidth': 1}, 
+                       'bar': {'color': "#f29b05"},
+                       'steps': [{'range': [0, 50], 'color': '#161b22'}, {'range': [50, 100], 'color': '#1c2128'}]}))
+            fig_d.update_layout(height=400, paper_bgcolor="rgba(0,0,0,0)", font={'color': "white", 'family': "Arial"})
+            st.plotly_chart(fig_d, use_container_width=True)
+            st.markdown(f'<div class="target-footer">MỤC TIÊU: {int(d["T_DEAD"]):,} DEAD</div>', unsafe_allow_html=True)
 
-            # Đồ thị KPI
-            st.write("---")
-            g1, g2 = st.columns(2)
-            with g1:
-                fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], number={'suffix':"%"},
-                                              gauge={'axis':{'range':[0, 100]}, 'bar':{'color':"#00FFFF"}}))
-                fig_k.update_layout(height=300, margin=dict(t=0, b=0))
-                st.plotly_chart(fig_k, use_container_width=True)
-                st.markdown(f'<div class="target-footer">KILL: {int(d[c_kill])/1_000_000:.1f}M / {int(d["T_KILL"])/1_000_000:.1f}M</div>', unsafe_allow_html=True)
-            
-            with g2:
-                fig_d = go.Figure(go.Indicator(mode="gauge+number", value=d['D_PCT'], number={'suffix':"%"},
-                                              gauge={'axis':{'range':[0, 100]}, 'bar':{'color':"#f29b05"}}))
-                fig_d.update_layout(height=300, margin=dict(t=0, b=0))
-                st.plotly_chart(fig_d, use_container_width=True)
-                st.markdown(f'<div class="target-footer">DEAD: {int(d["SUM_DEAD"]):,} / {int(d["T_DEAD"]):,}</div>', unsafe_allow_html=True)
-
-    # --- TAB 2: TỔNG QUAN ---
-    with tab2:
-        st.subheader("📋 DANH SÁCH TỔNG HỢP")
-        show_df = df[['RANK', c_name, c_kyluc, c_kill, 'SUM_DEAD', 'TOTAL_KPI_SCORE']]
-        st.dataframe(show_df.style.format({'TOTAL_KPI_SCORE': '{:.1f}%', c_kyluc: '{:,.0f}', c_kill: '{:,.0f}', 'SUM_DEAD': '{:,.0f}'}), 
-                     use_container_width=True, height=500)
-
-    # --- TAB 3: VINH DANH ---
-    with tab3:
-        st.subheader("🔥 CHIẾN BINH XUẤT SẮC (KPI > 100%)")
-        vinh_danh = df[df['TOTAL_KPI_SCORE'] >= 100][['RANK', c_name, 'K_PCT', 'D_PCT', 'TOTAL_KPI_SCORE']]
-        if not vinh_danh.empty:
-            st.balloons()
-            st.table(vinh_danh.style.format({'K_PCT': '{:.1f}%', 'D_PCT': '{:.1f}%', 'TOTAL_KPI_SCORE': '{:.1f}%'}))
-        else:
-            st.info("Chưa có thành viên nào đạt trên 100% KPI.")
+    # --- BẢNG XẾP HẠNG (EXPANDER) ---
+    st.write("")
+    with st.expander("📊 XEM TOÀN BỘ BẢNG XẾP HẠNG QUÂN ĐOÀN"):
+        st.dataframe(
+            df[['RANK', C_NAME, C_POW_NOW, C_KILL, 'SUM_DEAD', 'TOTAL_KPI']], 
+            use_container_width=True,
+            height=400
+        )
