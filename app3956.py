@@ -164,7 +164,41 @@ if res:
 
     with tab2:
         st.markdown("<div class='big-table-container'>", unsafe_allow_html=True)
+        
+        # 1. Lấy dữ liệu
         v_df = df[['H_RAW', c_name, c_pow, c_kill, 'K_PCT', 'SUM_DEAD', 'D_PCT']].copy()
-        v_df.columns = [L['col_rank'], L['col_name'], L['col_power'], L['col_kill'], L['col_kpi_kill'], L['col_dead'], L['col_kpi_dead']]
-        st.dataframe(v_df.style.format({L['col_power']: '{:,.0f}', L['col_kill']: '{:,.0f}', L['col_dead']: '{:,.0f}'}), use_container_width=True, height=700)
+        
+        # 2. Đặt tên cột theo ngôn ngữ
+        col_rank = L['col_rank']
+        col_name = L['col_name']
+        col_pow = L['col_power']
+        col_kill = L['col_kill']
+        col_kpi_k = L['col_kpi_kill']
+        col_dead = L['col_dead']
+        col_kpi_d = L['col_kpi_dead']
+        
+        v_df.columns = [col_rank, col_name, col_pow, col_kill, col_kpi_k, col_dead, col_kpi_d]
+        
+        # 3. Định dạng: Số có dấu phẩy, KPI có đuôi %
+        styled_df = v_df.style.format({
+            col_pow: '{:,.0f}',
+            col_kill: '{:,.0f}',
+            col_dead: '{:,.0f}',
+            col_kpi_k: '{:.1f}%', # Biến thành % (ví dụ 72.5%)
+            col_kpi_d: '{:.1f}%'  # Biến thành % (ví dụ 110.2%)
+        })
+        
+        # 4. (Tùy chọn) Tô màu cho đẹp: KPI >= 100% thì chữ màu xanh Neon
+        def highlight_kpi(val):
+            try:
+                num = float(val)
+                if num >= 100: return 'color: #00FF00;' 
+                return ''
+            except: return ''
+
+        # Áp dụng màu cho 2 cột phần trăm
+        styled_df = styled_df.map(highlight_kpi, subset=[col_kpi_k, col_kpi_d])
+        
+        # 5. Hiển thị bảng
+        st.dataframe(styled_df, use_container_width=True, height=750)
         st.markdown("</div>", unsafe_allow_html=True)
