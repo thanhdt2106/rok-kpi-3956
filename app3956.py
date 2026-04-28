@@ -37,7 +37,7 @@ def load_data():
         
         # Định nghĩa biến tên cột chuẩn theo ảnh bạn gửi
         C_NAME = 'Tên Người Dùng'
-        C_POW_MAX = 'Kỷ Lực Sức Mạnh'
+        C_POW_MAX = 'Kỷ Lụcc Sức Mạnh'
         C_POW_NOW = 'Sức Mạnh'
         C_KILL = 'Tổng Điểm Tiêu Diệt'
         C_DEAD_COLS = ['T5 tử vong', 'T4 tử vong', 'T3 tử vong', 'T2 tử vong', 'T1 tử vong']
