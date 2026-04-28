@@ -170,7 +170,7 @@ if res:
                 st.plotly_chart(fig_d, use_container_width=True, config={'displayModeBar': False})
                 st.markdown(f'<div class="gauge-footer">{L["target_dead"]}{int(d["SUM_DEAD"]/1000)}K / 400K</div>', unsafe_allow_html=True)
         else:
-            st.image("https://github.com/thanhdt2106/rok-kpi-3956/blob/main/meme1.png?raw=true", use_column_width=True)
+            st.image("https://github.com/thanhdt2106/rok-kpi-3956/blob/main/meme2.png?raw=true", use_column_width=True)
 
     with tab2:
         v_df = df[['H_RAW', c_name, c_pow, c_kill, 'K_PCT', 'SUM_DEAD', 'D_PCT']].copy()
