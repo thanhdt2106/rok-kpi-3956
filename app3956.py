@@ -5,69 +5,70 @@ import plotly.graph_objects as go
 # --- 1. CẤU HÌNH TRANG ---
 st.set_page_config(page_title="FTD KPI SYSTEM", layout="wide", initial_sidebar_state="collapsed")
 
-# --- 2. GIAO DIỆN CSS TỐI ƯU (SIÊU TO & FULL MÀN HÌNH) ---
+# --- 2. GIAO DIỆN CSS NÂNG CAO (BẢNG ĐẸP & CÓ ICON) ---
 st.markdown("""
     <style>
-    /* Ẩn Sidebar và Header dư thừa */
+    /* Ẩn Sidebar và Header */
     [data-testid="stSidebar"] {display: none;}
     [data-testid="stHeader"] {background: rgba(0,0,0,0);}
-
-    /* Nền tối và font chữ cơ bản */
     .stApp { background-color: #0d1117; color: #c9d1d9; }
     
-    /* Tiêu đề chính cực đại */
+    /* Tiêu đề chính với hiệu ứng Gradient */
     .main-header { 
-        color: #00FFFF; 
+        background: linear-gradient(90deg, #00FFFF, #58a6ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         text-align: center; 
-        font-size: 35px; 
+        font-size: 55px; 
         font-weight: 900; 
-        padding: 20px; 
-        border-bottom: 4px solid #58a6ff; 
-        margin-bottom: 30px; 
+        padding: 10px 0;
+        margin-bottom: 20px;
     }
 
-    /* Các thẻ thông số (Info Box) phóng to */
+    /* Tabs thiết kế hiện đại */
+    button[data-baseweb="tab"] {
+        background-color: transparent !important;
+        border: none !important;
+    }
+    button[data-baseweb="tab"] p {
+        font-size: 24px !important;
+        font-weight: bold !important;
+    }
+
+    /* --- STYLE BẢNG TỔNG HỢP SIÊU ĐẸP --- */
+    [data-testid="stDataFrame"] {
+        border: 1px solid #30363d !important;
+        border-radius: 15px !important;
+        overflow: hidden !important;
+        font-size: 22px !important;
+    }
+    
+    /* Màu nền tiêu đề cột và Icon */
+    [data-testid="stDataFrame"] th {
+        background-color: #161b22 !important;
+        color: #00FFFF !important;
+        font-weight: 900 !important;
+        text-align: center !important;
+        height: 70px !important;
+        border-bottom: 2px solid #58a6ff !important;
+    }
+
+    /* Hiệu ứng dòng khi di chuột qua */
+    [data-testid="stDataFrame"] tr:hover {
+        background-color: rgba(88, 166, 255, 0.1) !important;
+    }
+
+    /* Bo góc các Info Box ở Tab 1 */
     .info-box { 
         background: #161b22; 
-        border: 2px solid #30363d; 
-        border-radius: 10px; 
-        padding: 15px; 
+        border: 1px solid #30363d; 
+        border-radius: 20px; 
+        padding: 20px; 
         text-align: center; 
-        margin-bottom: 10px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
-    .info-label { color: #8b949e; font-size: 15px; font-weight: bold; text-transform: uppercase; margin-bottom: 8px; }
-    .info-value { color: #ffffff; font-size: 27px; font-weight: bold; }
-    
-    /* Chỉnh cỡ chữ cho Selectbox và Tabs */
-    .stSelectbox label p { font-size: 19px !important; font-weight: bold; color: #00FFFF !important; }
-    button[data-baseweb="tab"] p { font-size: 23px !important; font-weight: bold !important; }
-
-    /* --- PHẦN BẢNG DỮ LIỆU SIÊU TO --- */
-    /* Phóng to font chữ trong các ô của bảng */
-    [data-testid="stDataFrame"] td {
-        font-size: 30px !important;
-        height: 70px !important; /* Tăng độ cao dòng */
-    }
-    
-    /* Phóng to font chữ tiêu đề bảng */
-    [data-testid="stDataFrame"] th {
-        font-size: 35px !important;
-        color: #00FFFF !important;
-        height: 80px !important;
-        background-color: #161b22 !important;
-    }
-
-    /* Footer mục tiêu dưới biểu đồ */
-    .target-footer { 
-        color: #58a6ff; 
-        font-size: 26px; 
-        font-weight: bold; 
-        text-align: center; 
-        margin-top: -15px; 
-        padding: 15px;
-        background: rgba(88, 166, 255, 0.1);
-        border-radius: 10px;
-    }
+    .info-label { color: #8b949e; font-size: 18px; font-weight: bold; }
+    .info-value { color: #ffffff; font-size: 30px; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -89,119 +90,79 @@ def load_data():
         df = pd.read_csv(URL)
         df.columns = [str(c).replace('\n', ' ').strip() for c in df.columns]
         
-        def find_col(keys):
-            for c in df.columns:
-                if any(k.lower() in c.lower() for k in keys): return c
-            return None
-
-        c_name = find_col(['Tên Người Dùng', 'Tên'])
-        c_kyluc = find_col(['Kỷ Lục Sức Mạnh', 'Kỷ Lục'])
-        c_kill = find_col(['Tổng Điểm Tiêu Diệt', 'Tổng Tiêu'])
+        c_name = 'Tên Người Dùng'
+        c_kyluc = 'Kỷ Lục Sức Mạnh'
+        c_kill = 'Tổng Điểm Tiêu Diệt'
         
         numeric_cols = [c for c in df.columns if c != c_name]
         for col in numeric_cols:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
         dead_parts = ['T5 tử vong', 'T4 tử vong', 'T3 tử vong', 'T2 tử vong', 'T1 tử vong']
-        df['SUM_DEAD_UNITS'] = df[[c for c in dead_parts if c in df.columns]].sum(axis=1)
+        df['SUM_DEAD'] = df[[c for c in dead_parts if c in df.columns]].sum(axis=1)
         
         targets = df[c_kyluc].apply(get_targets)
         df['T_KILL'] = [x[0] for x in targets]
         df['T_DEAD'] = [x[1] for x in targets]
         
         df['K_PCT'] = (df[c_kill] / df['T_KILL'] * 100).round(1)
-        df['D_PCT'] = (df['SUM_DEAD_UNITS'] / df['T_DEAD'] * 100).round(1)
+        df['D_PCT'] = (df['SUM_DEAD'] / df['T_DEAD'] * 100).round(1)
         
-        # Xếp hạng chỉ theo % Kill
         df = df.sort_values(by='K_PCT', ascending=False).reset_index(drop=True)
-        df.insert(0, 'HẠNG', df.index + 1)
+        df.insert(0, 'HẠNG', range(1, len(df) + 1))
         
         return df, c_name, c_kyluc, c_kill
     except Exception as e:
-        st.error(f"Lỗi nạp dữ liệu: {e}")
         return None
 
 # --- 5. HIỂN THỊ ---
 res = load_data()
 if res:
     df, c_name, c_kyluc, c_kill = res
-    st.markdown('<div class="main-header">SHARED HOUSE 3956 - KPI COMMANDER</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">SHARED HOUSE 3956 KPI</div>', unsafe_allow_html=True)
     
-    tab1, tab2, tab3 = st.tabs(["👤 HỒ SƠ CHI TIẾT", "📊 BẢNG TỔNG HỢP QUÂN ĐOÀN", "🏆 VINH DANH (>100% KILL)"])
+    tab1, tab2 = st.tabs(["👤 CHI TIẾT", "📊 BẢNG TỔNG HỢP QUÂN ĐOÀN"])
     
     with tab1:
-        sel = st.selectbox("🔍 TÌM KIẾM CHIẾN BINH:", df[c_name].unique())
+        sel = st.selectbox("🔍 CHỌN CHIẾN BINH:", df[c_name].unique())
         if sel:
             d = df[df[c_name] == sel].iloc[0]
-            
-            st.write("<br>", unsafe_allow_html=True)
-            m1, m2, m3, m4 = st.columns(4)
-            with m1: st.markdown(f'<div class="info-box"><div class="info-label">🏆 Thứ Hạng</div><div class="info-value" style="color:#f29b05; font-size:45px;">#{int(d["HẠNG"])}</div></div>', unsafe_allow_html=True)
-            with m2: st.markdown(f'<div class="info-box"><div class="info-label">⭐ Kỷ Lực Sức Mạnh</div><div class="info-value">{int(d[c_kyluc]):,}</div></div>', unsafe_allow_html=True)
-            with m3: st.markdown(f'<div class="info-box"><div class="info-label">🔥 % Hoàn Thành Kill</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
-            with m4: st.markdown(f'<div class="info-box"><div class="info-label">💀 % Hoàn Thành Dead</div><div class="info-value">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
-
-            with st.expander("📝 XEM TẤT CẢ THÔNG SỐ CHI TIẾT", expanded=False):
-                all_cols = [c for c in df.columns if c not in ['HẠNG', 'T_KILL', 'T_DEAD', 'K_PCT', 'D_PCT', 'SUM_DEAD_UNITS']]
-                cols = st.columns(4)
-                for i, col in enumerate(all_cols):
-                    with cols[i % 4]:
-                        val = f"{int(d[col]):,}" if isinstance(d[col], (int, float)) else d[col]
-                        st.markdown(f'<div class="info-box"><div class="info-label">{col}</div><div class="info-value" style="font-size:20px;">{val}</div></div>', unsafe_allow_html=True)
-
-            st.write("---")
-            k1, k2 = st.columns(2)
-            with k1:
-                fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], 
-                                              number={'suffix': "%", 'font': {'size': 80}},
-                                              title={'text': "KPI TIÊU DIỆT", 'font': {'size': 35, 'color': '#00FFFF'}},
-                                              gauge={'axis': {'range': [0, 100], 'tickfont': {'size': 20}}, 'bar': {'color': "#00FFFF"}}))
-                fig_k.update_layout(height=450, margin=dict(t=80, b=0), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
-                st.plotly_chart(fig_k, use_container_width=True)
-                st.markdown(f'<div class="target-footer">MỤC TIÊU: {int(d["T_KILL"]):,} KILL</div>', unsafe_allow_html=True)
-                
-            with k2:
-                fig_d = go.Figure(go.Indicator(mode="gauge+number", value=d['D_PCT'], 
-                                              number={'suffix': "%", 'font': {'size': 80}},
-                                              title={'text': "KPI TỬ VONG", 'font': {'size': 35, 'color': '#f29b05'}},
-                                              gauge={'axis': {'range': [0, 100], 'tickfont': {'size': 20}}, 'bar': {'color': "#f29b05"}}))
-                fig_d.update_layout(height=450, margin=dict(t=80, b=0), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
-                st.plotly_chart(fig_d, use_container_width=True)
-                st.markdown(f'<div class="target-footer">MỤC TIÊU: {int(d["T_DEAD"]):,} DEAD</div>', unsafe_allow_html=True)
+            col1, col2, col3, col4 = st.columns(4)
+            with col1: st.markdown(f'<div class="info-box"><div class="info-label">🏆 HẠNG</div><div class="info-value" style="color:#FFD700;">#{int(d["HẠNG"])}</div></div>', unsafe_allow_html=True)
+            with col2: st.markdown(f'<div class="info-box"><div class="info-label">⭐ KỶ LỤC</div><div class="info-value">{int(d[c_kyluc]):,}</div></div>', unsafe_allow_html=True)
+            with col3: st.markdown(f'<div class="info-box"><div class="info-label">🔥 % KILL</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
+            with col4: st.markdown(f'<div class="info-box"><div class="info-label">💀 % DEAD</div><div class="info-value">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
 
     with tab2:
-        st.markdown("<h2 style='text-align: center; color: #00FFFF; font-size: 40px;'>BẢNG THỐNG KÊ CHI TIẾT TOÀN QUÂN</h2>", unsafe_allow_html=True)
+        st.write("<br>", unsafe_allow_html=True)
         
-        view_df = df[['HẠNG', c_name, c_kyluc, c_kill, 'K_PCT', 'SUM_DEAD_UNITS', 'D_PCT']].copy()
+        # --- BẢNG VỚI TIÊU ĐỀ CÓ ICON ---
+        view_df = df[['HẠNG', c_name, c_kyluc, c_kill, 'K_PCT', 'SUM_DEAD', 'D_PCT']].copy()
         view_df.columns = [
-            'HẠNG', 
-            'TÊN CHIẾN BINH', 
-            'KỶ LỤC POW', 
-            'ĐIỂM KILL', 
-            '% KILL', 
-            'LÍNH CHẾT', 
-            '% DEAD'
+            'No. 🏆', 
+            'CHIẾN BINH 🥷', 
+            'KỶ LỤC POW 🛡️', 
+            'ĐIỂM KILL ⚔️', 
+            'KPI KILL 🔥', 
+            'LÍNH CHẾT 💀', 
+            'KPI DEAD ⚰️'
         ]
         
-        st.dataframe(
-            view_df.style.format({
-                'KỶ LỤC POW': '{:,.0f}', 
-                'ĐIỂM KILL': '{:,.0f}', 
-                '% KILL': '{:.1f}%', 
-                'LÍNH CHẾT': '{:,.0f}', 
-                '% DEAD': '{:.1f}%'
-            }), 
-            use_container_width=True, 
-            height=900
-        )
+        # Thiết lập màu sắc dựa trên % hoàn thành
+        def highlight_kpi(val):
+            try:
+                num = float(val.replace('%', ''))
+                if num >= 100: return 'color: #00FF00; font-weight: bold;' # Xanh lá nếu đạt 100%
+                if num < 50: return 'color: #FF4B4B;' # Đỏ nếu quá thấp
+                return ''
+            except: return ''
 
-    with tab3:
-        st.subheader("🔥 DANH SÁCH CHIẾN BINH VƯỢT MỐC 100% KILL")
-        winner_df = df[df['K_PCT'] >= 100][['HẠNG', c_name, 'K_PCT', 'D_PCT']]
-        winner_df.columns = ['HẠNG', 'TÊN CHIẾN BINH', '% KILL', '% DEAD']
+        styled_df = view_df.style.format({
+            'KỶ LỤC POW 🛡️': '{:,.0f}', 
+            'ĐIỂM KILL ⚔️': '{:,.0f}', 
+            'KPI KILL 🔥': '{:.1f}%', 
+            'LÍNH CHẾT 💀': '{:,.0f}', 
+            'KPI DEAD ⚰️': '{:.1f}%'
+        }).applymap(highlight_kpi, subset=['KPI KILL 🔥', 'KPI DEAD ⚰️'])
         
-        if not winner_df.empty:
-            st.balloons()
-            st.table(winner_df.style.format({'% KILL': '{:.1f}%', '% DEAD': '{:.1f}%'}))
-        else:
-            st.info("Chưa có chiến binh nào vượt mốc 100% Kill.")
+        st.dataframe(styled_df, use_container_width=True, height=1000)
