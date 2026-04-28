@@ -25,7 +25,7 @@ def get_targets(pow_val):
     elif p_mil < 30: return 250_000_000, 300_000
     else: return 300_000_000, 400_000
 
-# --- 4. DATA ENGINE ---
+# --- 4. DATA ENGINE (FIX LỖI DÒ CỘT) ---
 SHEET_ID = '1MJQSE3siwFWmQNdJmbbJ6RsilvcoxWTu-r6h-UdHugE'
 URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=351056493'
 
@@ -33,101 +33,102 @@ URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=
 def load_data():
     try:
         df = pd.read_csv(URL)
-        # Làm sạch tên cột: xóa khoảng trắng, xóa xuống dòng
-        df.columns = [str(c).replace('\\n', ' ').replace('\n', ' ').strip() for c in df.columns]
         
-        # Hàm tìm cột không sợ sai tên chính xác
+        # Làm sạch tên cột triệt để (Xóa xuống dòng, xóa khoảng trắng thừa)
+        df.columns = [str(c).replace('\n', ' ').strip() for c in df.columns]
+        
+        # Cơ chế dò cột thông minh dựa trên ảnh Sheet bạn gửi
         def find_col(keywords):
             for c in df.columns:
-                if any(k.lower() in c.lower() for k in keywords): return c
+                if any(k.lower() in c.lower() for k in keywords):
+                    return c
             return None
 
-        c_name = find_col(['Tên Người Dùng', 'Tên'])
-        c_kyluc = find_col(['Kỷ Lực Sức Mạnh', 'Kỷ Lực'])
-        c_kill = find_col(['Tổng Điểm Tiêu Diệt', 'Tổng Tiêu'])
+        c_name = find_col(['Tên Người Dùng']) 
+        c_kyluc = find_col(['Kỷ Lực Sức Mạnh']) 
+        c_kill = find_col(['Tổng Điểm Tiêu Diệt']) 
+        c_pow_now = find_col(['Sức Mạnh']) # Cột C trong ảnh
 
-        if not c_kyluc or not c_kill:
-            st.error("Không tìm thấy cột 'Kỷ Lực' hoặc 'Tiêu Diệt'. Kiểm tra lại tên cột trên Google Sheet!")
+        # Kiểm tra nếu thiếu cột quan trọng
+        if not all([c_name, c_kyluc, c_kill]):
+            st.error(f"Lỗi: Không tìm thấy các cột cần thiết. Cột đang có: {list(df.columns)}")
             return None
 
-        # Chuyển đổi dữ liệu số
-        for col in df.columns:
-            if col != c_name:
-                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+        # Chuyển đổi dữ liệu số an toàn
+        numeric_cols = [c for c in df.columns if c != c_name]
+        for col in numeric_cols:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
-        # Tính Dead Units
-        dead_cols = ['T5 tử vong', 'T4 tử vong', 'T3 tử vong', 'T2 tử vong', 'T1 tử vong']
-        df['SUM_DEAD'] = df[[c for c in dead_cols if c in df.columns]].sum(axis=1)
+        # Tính toán Dead (Cột E đến I trong ảnh)
+        dead_keywords = ['T5 tử vong', 'T4 tử vong', 'T3 tử vong', 'T2 tử vong', 'T1 tử vong']
+        actual_dead_cols = [c for c in df.columns if any(k in c for k in dead_keywords)]
+        df['SUM_DEAD'] = df[actual_dead_cols].sum(axis=1)
 
-        # Tính KPI
+        # Gán Target và tính % hoàn thành
         targets = df[c_kyluc].apply(get_targets)
         df['T_KILL'] = [x[0] for x in targets]
         df['T_DEAD'] = [x[1] for x in targets]
+        
         df['K_PCT'] = (df[c_kill] / df['T_KILL'] * 100).round(1)
         df['D_PCT'] = (df['SUM_DEAD'] / df['T_DEAD'] * 100).round(1)
         df['TOTAL_KPI'] = ((df['K_PCT'] + df['D_PCT']) / 2).round(1)
         
-        # Sắp xếp Rank
+        # Xếp hạng
         df = df.sort_values(by='TOTAL_KPI', ascending=False).reset_index(drop=True)
         df.insert(0, 'RANK', df.index + 1)
         
-        return df, c_name, c_kyluc, c_kill
+        return df, c_name, c_kyluc, c_kill, c_pow_now
     except Exception as e:
-        st.error(f"Lỗi nạp dữ liệu: {e}")
+        st.error(f"Lỗi hệ thống: {e}")
         return None
 
 # --- 5. HIỂN THỊ ---
 res = load_data()
 if res:
-    df, c_name, c_kyluc, c_kill = res
-    st.markdown('<div class="main-header">SHARED HOUSE 3956 KPI</div>', unsafe_allow_html=True)
+    df, c_name, c_kyluc, c_kill, c_pow_now = res
+    st.markdown('<div class="main-header">SHARED HOUSE 3956 KPI SYSTEM</div>', unsafe_allow_html=True)
     
-    tab1, tab2, tab3 = st.tabs(["👤 HỒ SƠ", "📊 TỔNG QUAN", "🏆 VINH DANH"])
+    tab1, tab2, tab3 = st.tabs(["👤 HỒ SƠ CHIẾN BINH", "📊 BẢNG TỔNG HỢP", "🏆 VINH DANH"])
     
     with tab1:
-        sel = st.selectbox("🔍 CHỌN CHIẾN BINH:", df[c_name].unique())
+        sel = st.selectbox("🔍 TÌM TÊN CHIẾN BINH:", df[c_name].unique())
         if sel:
             d = df[df[c_name] == sel].iloc[0]
             
-            # Thông số chi tiết
-            with st.expander("📊 THÔNG SỐ TỪ SHEET", expanded=True):
-                cols = st.columns(5)
-                # Chỉ hiện các cột gốc từ Sheet
-                display_cols = [c for c in df.columns if c not in ['RANK', 'T_KILL', 'T_DEAD', 'K_PCT', 'D_PCT', 'TOTAL_KPI', 'SUM_DEAD']]
-                for i, col in enumerate(display_cols):
-                    with cols[i % 5]:
-                        val = f"{int(d[col]):,}" if isinstance(d[col], (int, float)) else d[col]
-                        st.markdown(f'<div class="info-box"><div class="info-label">{col}</div><div class="info-value">{val}</div></div>', unsafe_allow_html=True)
+            # Khối thông tin cơ bản
+            cols = st.columns(4)
+            with cols[0]: st.markdown(f'<div class="info-box"><div class="info-label">Kỷ Lực POW</div><div class="info-value">{int(d[c_kyluc]):,}</div></div>', unsafe_allow_html=True)
+            with cols[1]: st.markdown(f'<div class="info-box"><div class="info-label">POW Hiện Tại</div><div class="info-value">{int(d[c_pow_now]):,}</div></div>', unsafe_allow_html=True)
+            with cols[2]: st.markdown(f'<div class="info-box"><div class="info-label">Tổng Tiêu Diệt</div><div class="info-value">{int(d[c_kill]):,}</div></div>', unsafe_allow_html=True)
+            with cols[3]: st.markdown(f'<div class="info-box"><div class="info-label">Tổng Tử Vong</div><div class="info-value">{int(d["SUM_DEAD"]):,}</div></div>', unsafe_allow_html=True)
 
-            # Biểu đồ KPI
+            # Biểu đồ Gauge
             st.write("---")
             k1, k2 = st.columns(2)
             with k1:
                 fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], number={'suffix': "%"},
-                                              title={'text': "KPI TIÊU DIỆT", 'font': {'size': 15}},
+                                              title={'text': "KPI TIÊU DIỆT", 'font': {'size': 16, 'color': '#00FFFF'}},
                                               gauge={'axis': {'range': [0, 100]}, 'bar': {'color': "#00FFFF"}}))
-                fig_k.update_layout(height=250, margin=dict(t=50, b=0), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
+                fig_k.update_layout(height=300, margin=dict(t=50, b=0), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_k, use_container_width=True)
-                st.markdown(f'<div class="target-footer">Thực tế: {int(d[c_kill]):,}<br>Mục tiêu: {int(d["T_KILL"]):,}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="target-footer">Mục tiêu: {int(d["T_KILL"]):,}</div>', unsafe_allow_html=True)
             
             with k2:
                 fig_d = go.Figure(go.Indicator(mode="gauge+number", value=d['D_PCT'], number={'suffix': "%"},
-                                              title={'text': "KPI TỬ VONG", 'font': {'size': 15}},
+                                              title={'text': "KPI TỬ VONG", 'font': {'size': 16, 'color': '#f29b05'}},
                                               gauge={'axis': {'range': [0, 100]}, 'bar': {'color': "#f29b05"}}))
-                fig_d.update_layout(height=250, margin=dict(t=50, b=0), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
+                fig_d.update_layout(height=300, margin=dict(t=50, b=0), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_d, use_container_width=True)
-                st.markdown(f'<div class="target-footer">Thực tế: {int(d["SUM_DEAD"]):,}<br>Mục tiêu: {int(d["T_DEAD"]):,}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="target-footer">Mục tiêu: {int(d["T_DEAD"]):,}</div>', unsafe_allow_html=True)
 
     with tab2:
-        st.subheader("📋 BẢNG XẾP HẠNG QUÂN ĐOÀN")
-        # Dùng st.dataframe thuần túy để không bị lỗi ImportError
-        st.dataframe(df[['RANK', c_name, c_kyluc, c_kill, 'SUM_DEAD', 'TOTAL_KPI']], use_container_width=True, height=500)
+        # Bảng tổng hợp rút gọn để tránh rối
+        st.dataframe(df[['RANK', c_name, c_pow_now, c_kill, 'SUM_DEAD', 'TOTAL_KPI']], use_container_width=True, height=600)
 
     with tab3:
-        st.subheader("🔥 CHIẾN BINH HOÀN THÀNH >100% KPI")
         winners = df[df['TOTAL_KPI'] >= 100][['RANK', c_name, 'TOTAL_KPI']]
         if not winners.empty:
             st.balloons()
             st.table(winners)
         else:
-            st.info("Chưa có ai đạt mốc 100%.")
+            st.info("Đang cập nhật danh sách vinh danh...")
