@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+from streamlit_searchbox import st_searchbox
 
 # --- 1. CẤU HÌNH TRANG ---
 st.set_page_config(page_title="FTD KPI SYSTEM", layout="wide", initial_sidebar_state="collapsed")
@@ -8,15 +9,13 @@ st.set_page_config(page_title="FTD KPI SYSTEM", layout="wide", initial_sidebar_s
 # --- 2. KHỞI TẠO SESSION STATE ---
 if 'lang' not in st.session_state:
     st.session_state.lang = "VN"
-if 'selected_index' not in st.session_state:
-    st.session_state.selected_index = 0
 
 # --- 3. DỮ LIỆU PHIÊN DỊCH ---
 TEXTS = {
     "VN": {
         "header": "HỆ THỐNG KPI - SHARED HOUSE 3956",
         "tab1": "👤 HỒ SƠ CHI TIẾT", "tab2": "📊 TỔNG QUAN QUÂN ĐOÀN",
-        "placeholder": "🔍 Gõ để tìm kiếm (tự động gợi ý)...",
+        "placeholder": "🔍 Nhập tên hoặc ID để tìm kiếm...",
         "rank": "🏆 HẠNG", "power_now": "🛡️ SỨC MẠNH", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT", 
         "target_kill": "ĐẠT: ", "target_dead": "ĐẠT: ",
@@ -28,7 +27,7 @@ TEXTS = {
     "EN": {
         "header": "KPI SYSTEM - SHARED HOUSE 3956",
         "tab1": "👤 DETAILED PROFILE", "tab2": "📊 ALLIANCE OVERVIEW",
-        "placeholder": "🔍 Type to search (auto-suggest)...",
+        "placeholder": "🔍 Type name or ID to search...",
         "rank": "🏆 RANK", "power_now": "🛡️ POWER", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 VIEW FULL STATISTICS", 
         "target_kill": "REACHED: ", "target_dead": "REACHED: ",
@@ -59,6 +58,8 @@ st.markdown(f"""
     .info-label {{ color: #8b949e; font-size: 11px; font-weight: bold; text-transform: uppercase; }}
     .info-value {{ color: #ffffff; font-size: 16px; font-weight: 800; }}
     .gauge-footer {{ color: #58a6ff; font-size: 13px; font-weight: 800; text-align: center; margin-top: -35px; }}
+    /* Tùy chỉnh searchbox cho tiệp màu với giao diện tối */
+    div[data-testid="stSearchbox"] input {{ background-color: #161b22 !important; color: white !important; border: 1px solid #30363d !important; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -78,7 +79,7 @@ def load_data():
         df['D_PCT'] = (df['SUM_DEAD'] / 400_000 * 100).round(1)
         df = df.sort_values(by='K_PCT', ascending=False).reset_index(drop=True)
         df.insert(0, 'H_RAW', range(1, len(df) + 1))
-        df['Full_Search'] = df[c_name] + " (ID: " + df[c_id].astype(str) + ")"
+        df['Full_Search'] = df[c_name].astype(str) + " (ID: " + df[c_id].astype(str) + ")"
         return df, c_id, c_name, c_pow, c_kill
     except Exception as e:
         st.error(f"Lỗi tải dữ liệu: {e}")
@@ -89,7 +90,13 @@ res = load_data()
 if res:
     df, c_id, c_name, c_pow, c_kill = res
     options_list = df['Full_Search'].tolist()
-    
+
+    # Hàm xử lý tìm kiếm thời gian thực (giống YouTube)
+    def search_warriors(search_term: str):
+        if not search_term or len(search_term) < 1:
+            return []
+        return [opt for opt in options_list if search_term.lower() in opt.lower()][:10]
+
     st.markdown(f'<div class="main-header">{L["header"]}</div>', unsafe_allow_html=True)
     
     col_lang, col_search = st.columns([1, 4])
@@ -101,29 +108,19 @@ if res:
                  horizontal=True, label_visibility="collapsed")
     
     with col_search:
-        # Cấu hình danh sách: Có phần tử trống ở đầu
-        search_options = [""] + options_list
-        current_val = st.session_state.get("main_search", "")
-
-        # CSS ẩn menu xổ xuống khi chưa gõ gì
-        if current_val == "" or current_val is None:
-            st.markdown("<style>div[data-baseweb='popover'] { display: none !important; }</style>", unsafe_allow_html=True)
-        else:
-            st.markdown("<style>div[data-baseweb='popover'] { display: block !important; }</style>", unsafe_allow_html=True)
-
-        choice = st.selectbox(
-            "Search",
-            options=search_options,
-            index=0,
+        # Searchbox thông minh: Gõ là hiện, Click là chọn
+        choice = st_searchbox(
+            search_warriors,
             placeholder=L["placeholder"],
-            label_visibility="collapsed",
-            key="main_search"
+            key="warrior_search_box",
+            label=None,
+            clear_on_submit=False,
         )
 
     tab1, tab2 = st.tabs([L["tab1"], L["tab2"]])
     
     with tab1:
-        if choice and choice != "":
+        if choice:
             d = df[df['Full_Search'] == choice].iloc[0]
             
             m1, m2, m3, m4 = st.columns(4)
@@ -153,6 +150,7 @@ if res:
                 st.plotly_chart(fig_d, use_container_width=True, config={'displayModeBar': False})
                 st.markdown(f'<div class="gauge-footer">{L["target_dead"]}{int(d["SUM_DEAD"]/1000)}K / 400K</div>', unsafe_allow_html=True)
         else:
+            # Hiện meme mặc định khi chưa chọn ai
             st.image("https://github.com/thanhdt2106/rok-kpi-3956/blob/main/meme2.png?raw=true", use_container_width=True)
 
     with tab2:
