@@ -2,8 +2,12 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
-# --- 1. CẤU HÌNH TRANG ---
-st.set_page_config(page_title="FTD KPI SYSTEM", layout="wide", initial_sidebar_state="collapsed")
+# --- 1. CẤU HÌNH TRANG & ẨN SIDEBAR ---
+st.set_page_config(
+    page_title="FTD KPI SYSTEM", 
+    layout="wide", 
+    initial_sidebar_state="collapsed"
+)
 
 # --- 2. HỆ THỐNG NGÔN NGỮ ---
 lang_option = st.selectbox("🌐 Ngôn ngữ / Language:", ["VN", "EN"])
@@ -14,7 +18,7 @@ texts = {
         "tab1": "👤 HỒ SƠ CHI TIẾT", "tab2": "📊 TỔNG QUAN QUÂN ĐOÀN",
         "select_player": "🔍 CHỌN CHIẾN BINH:", "rank": "🏆 HẠNG",
         "power_now": "🛡️ SỨC MẠNH", "kpi_kill_pct": "🔥 % KILL",
-        "kpi_dead_pct": "💀 % DEAD", "detail_title": "##### 📌 THÔNG SỐ CHI TIẾT TỪ SHEET",
+        "kpi_dead_pct": "💀 % DEAD", "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT",
         "target_kill": "MỤC TIÊU", "target_dead": "MỤC TIÊU",
         "col_rank": "HẠNG 🏆", "col_name": "CHIẾN BINH 🥷", "col_power": "SỨC MẠNH 🛡️",
         "col_kill": "ĐIỂM KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥",
@@ -29,7 +33,7 @@ texts = {
         "tab1": "👤 DETAILED PROFILE", "tab2": "📊 ALLIANCE OVERVIEW",
         "select_player": "🔍 SELECT COMMANDER:", "rank": "🏆 RANK",
         "power_now": "🛡️ POWER", "kpi_kill_pct": "🔥 % KILL",
-        "kpi_dead_pct": "💀 % DEAD", "detail_title": "##### 📌 DETAILED STATISTICS",
+        "kpi_dead_pct": "💀 % DEAD", "detail_title": "📌 VIEW DETAILED STATISTICS",
         "target_kill": "TARGET", "target_dead": "TARGET",
         "col_rank": "RANK 🏆", "col_name": "COMMANDER 🥷", "col_power": "POWER 🛡️",
         "col_kill": "KILL POINTS ⚔️", "col_kpi_kill": "KPI KILL 🔥",
@@ -42,9 +46,12 @@ texts = {
 }
 L = texts[lang_option]
 
-# --- 3. GIAO DIỆN CSS TỔNG LỰC ---
+# --- 3. GIAO DIỆN CSS TỔNG LỰC (ẨN SIDEBAR & LÀM ĐẸP) ---
 st.markdown(f"""
     <style>
+    /* ẨN SIDEBAR GỐC */
+    [data-testid="stSidebarNav"] {{display: none;}}
+    [data-testid="collapsedControl"] {{display: none;}}
     .stApp {{ background-color: #0d1117; color: #c9d1d9; }}
     
     /* Header chính */
@@ -58,9 +65,7 @@ st.markdown(f"""
     .info-box {{ 
         background: #161b22; border: 1px solid #30363d; border-radius: 12px; 
         padding: 15px; text-align: center; margin-bottom: 10px;
-        transition: transform 0.2s;
     }}
-    .info-box:hover {{ border-color: #58a6ff; transform: translateY(-2px); }}
     .info-label {{ color: #8b949e; font-size: clamp(11px, 2.5vw, 14px); font-weight: bold; text-transform: uppercase; margin-bottom: 8px; }}
     .info-value {{ color: #ffffff; font-size: clamp(18px, 4vw, 24px); font-weight: 800; }}
 
@@ -70,18 +75,19 @@ st.markdown(f"""
         text-align: center; margin-top: -30px; padding-bottom: 10px;
     }}
 
-    /* Bảng dữ liệu */
+    /* Bảng dữ liệu siêu to rõ */
     .big-table-container [data-testid="stDataFrame"] th {{
         background-color: #1f2937 !important; color: #00FFFF !important;
-        font-size: 18px !important; font-weight: 900 !important;
+        font-size: 20px !important; font-weight: 900 !important;
     }}
     .big-table-container [data-testid="stDataFrame"] td {{
-        font-size: 17px !important; font-weight: 600 !important;
+        font-size: 19px !important; font-weight: 600 !important;
     }}
 
-    /* Điều chỉnh hiển thị cột trên Mobile */
+    /* Responsive cho Mobile */
     @media (max-width: 768px) {{
         [data-testid="column"] {{ width: 50% !important; flex: 1 1 45% !important; }}
+        .main-header {{ font-size: 26px; }}
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -132,9 +138,8 @@ if res:
         m3.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
         m4.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
         
-        # --- DETAILED PROFILE (10 BOXES) ---
-      # --- THÔNG SỐ CHI TIẾT DẠNG ĐÓNG MỞ (EXPANDER) ---
-        with st.expander(L["detail_title"], expanded=False): # expanded=False để mặc định là đóng
+        # --- EXPANDER THÔNG SỐ ---
+        with st.expander(L["detail_title"], expanded=False):
             box_map = [
                 (L["map_id"], "ID nhân vật"), (L["map_name"], c_name), 
                 (L["map_pow"], c_pow), (L["map_record"], "Kỷ Lục Sức Mạnh"),
@@ -142,23 +147,12 @@ if res:
                 (L["map_t3_d"], "T3 tử vong"), (L["map_kill"], c_kill),
                 (L["map_t5_k"], "Tổng Tiêu Diệt T5"), (L["map_t4_k"], "Tổng Tiêu Diệt T4")
             ]
-            
-            # Chia 5 cột cho PC bên trong expander
             det_cols = st.columns(5)
             for idx, (label, col_key) in enumerate(box_map):
                 val = d[col_key] if col_key in d else 0
                 txt_val = f"{int(val):,}" if isinstance(val, (int, float)) else val
-                
-                # Hiển thị box
-                det_cols[idx % 5].markdown(
-                    f'''
-                    <div class="info-box" style="margin-top: 10px;">
-                        <div class="info-label">{label}</div>
-                        <div class="info-value" style="font-size:16px;">{txt_val}</div>
-                    </div>
-                    ''', 
-                    unsafe_allow_html=True
-                )
+                det_cols[idx % 5].markdown(f'<div class="info-box" style="margin-top:10px;"><div class="info-label">{label}</div><div class="info-value" style="font-size:16px;">{txt_val}</div></div>', unsafe_allow_html=True)
+
         # --- GAUGE CHARTS ---
         g1, g2 = st.columns(2)
         with g1:
@@ -174,41 +168,20 @@ if res:
 
     with tab2:
         st.markdown("<div class='big-table-container'>", unsafe_allow_html=True)
-        
-        # 1. Lấy dữ liệu
         v_df = df[['H_RAW', c_name, c_pow, c_kill, 'K_PCT', 'SUM_DEAD', 'D_PCT']].copy()
         
-        # 2. Đặt tên cột theo ngôn ngữ
-        col_rank = L['col_rank']
-        col_name = L['col_name']
-        col_pow = L['col_power']
-        col_kill = L['col_kill']
-        col_kpi_k = L['col_kpi_kill']
-        col_dead = L['col_dead']
-        col_kpi_d = L['col_kpi_dead']
+        c_kpi_k = L['col_kpi_kill']
+        c_kpi_d = L['col_kpi_dead']
+        v_df.columns = [L['col_rank'], L['col_name'], L['col_power'], L['col_kill'], c_kpi_k, L['col_dead'], c_kpi_d]
         
-        v_df.columns = [col_rank, col_name, col_pow, col_kill, col_kpi_k, col_dead, col_kpi_d]
-        
-        # 3. Định dạng: Số có dấu phẩy, KPI có đuôi %
+        # Style Bảng: Số có dấu phẩy, KPI có %
         styled_df = v_df.style.format({
-            col_pow: '{:,.0f}',
-            col_kill: '{:,.0f}',
-            col_dead: '{:,.0f}',
-            col_kpi_k: '{:.1f}%', # Biến thành % (ví dụ 72.5%)
-            col_kpi_d: '{:.1f}%'  # Biến thành % (ví dụ 110.2%)
+            L['col_power']: '{:,.0f}', L['col_kill']: '{:,.0f}', L['col_dead']: '{:,.0f}',
+            c_kpi_k: '{:.1f}%', c_kpi_d: '{:.1f}%'
         })
         
-        # 4. (Tùy chọn) Tô màu cho đẹp: KPI >= 100% thì chữ màu xanh Neon
-        def highlight_kpi(val):
-            try:
-                num = float(val)
-                if num >= 100: return 'color: #00FF00;' 
-                return ''
-            except: return ''
-
-        # Áp dụng màu cho 2 cột phần trăm
-        styled_df = styled_df.map(highlight_kpi, subset=[col_kpi_k, col_kpi_d])
+        # Highlight ai đạt 100% màu xanh lá sáng
+        styled_df = styled_df.map(lambda x: 'color: #00FF00;' if isinstance(x, (float, int)) and x >= 100 else '', subset=[c_kpi_k, c_kpi_d])
         
-        # 5. Hiển thị bảng
-        st.dataframe(styled_df, use_container_width=True, height=1000)
+        st.dataframe(styled_df, use_container_width=True, height=800)
         st.markdown("</div>", unsafe_allow_html=True)
