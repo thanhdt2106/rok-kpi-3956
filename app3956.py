@@ -149,8 +149,8 @@ if res:
                 
                 # Chi tiết Kill/Dead
                 st.write("---")
-                k_cols = st.columns(5)
-                for i, t in enumerate(['T5', 'T4', 'T3', 'T2', 'T1']):
+                k_cols = st.columns(4)
+                for i, t in enumerate(['T5', 'T4', 'T3', 'T2']):
                     k_cols[i].markdown(f'<div class="info-box"><div class="info-label">{t} Kill</div><div class="info-value">{int(d[f"Tổng Tiêu Diệt {t}"]):,}</div></div>', unsafe_allow_html=True)
                 
                 d_cols = st.columns(5)
