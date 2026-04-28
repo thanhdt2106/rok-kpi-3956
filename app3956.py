@@ -24,17 +24,17 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. LOGIC TÍNH KPI THEO MỐC POWER (ĐÃ CHỈNH ĐƠN VỊ KILL) ---
-def get_targets(power):
-    p_mil = power / 1_000_000
-    # Kill KPI chỉnh về hàng trăm triệu (10M -> 100M, 20M -> 200M,...)
+# --- 3. LOGIC TÍNH KPI THEO MỐC "KỶ LỰC SỨC MẠNH" (POW TRƯỚC CHIẾN) ---
+def get_targets(pow_before):
+    p_mil = pow_before / 1_000_000
+    # Kill KPI (hàng trăm triệu), Dead KPI (hàng nghìn)
     if p_mil < 15:
-        return 100_000_000, 200_000  # Kill, Dead Units
+        return 100_000_000, 200_000
     elif p_mil < 20:
         return 200_000_000, 250_000
     elif p_mil < 30:
         return 250_000_000, 300_000
-    else: # > 40M
+    else: # Mốc cao nhất từ 40M+
         return 300_000_000, 400_000
 
 # --- 4. XỬ LÝ DỮ LIỆU ---
@@ -46,39 +46,44 @@ URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=
 def load_data():
     try:
         df = pd.read_csv(URL)
+        # CHUẨN HÓA TÊN CỘT: Xóa khoảng trắng thừa để tránh lỗi KeyError
         df.columns = [str(c).strip() for c in df.columns]
         
+        # Danh sách cột cần làm sạch dữ liệu
         numeric_cols = [
-            'Sức Mạnh', 'T5 tử vong', 'T4 tử vong', 'T3 tử vong', 'T2 tử vong', 'T1 tử vong', 
-            'Tổng Điểm Tiêu Diệt', 'Kỷ Lực Sức Mạnh', 'Tài Nguyên Thu Thập', 'Hỗ Trợ Liên Minh'
+            'Sức Mạnh', 'Kỷ Lực Sức Mạnh', 'T5 tử vong', 'T4 tử vong', 'T3 tử vong', 
+            'T2 tử vong', 'T1 tử vong', 'Tổng Điểm Tiêu Diệt', 'Tài Nguyên Thu Thập', 'Hỗ Trợ Liên Minh'
         ]
+        
         for col in numeric_cols:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
-        # Tính Dead Power Score (Trọng số T5=10, T4=4, T3=3, T2=2, T1=1)
+        # 1. Tính Tổng lính tử vong (Units)
+        df['TOTAL_DEAD_UNITS'] = df['T5 tử vong'] + df['T4 tử vong'] + df['T3 tử vong'] + df['T2 tử vong'] + df['T1 tử vong']
+        
+        # 2. Tính Điểm Tử Vong (Power Score) theo trọng số
         df['DEAD_POWER_SCORE'] = (df['T5 tử vong'] * 10) + (df['T4 tử vong'] * 4) + \
                                  (df['T3 tử vong'] * 3) + (df['T2 tử vong'] * 2) + \
                                  (df['T1 tử vong'] * 1)
 
-        # Áp dụng hàm tính Target
-        targets = df['Sức Mạnh'].apply(get_targets)
+        # 3. Gán Target dựa trên "KỶ LỰC SỨC MẠNH" [QUAN TRỌNG]
+        targets = df['Kỷ Lực Sức Mạnh'].apply(get_targets)
         df['TARGET_KILL'] = [x[0] for x in targets]
         df['TARGET_DEAD'] = [x[1] for x in targets]
         
-        # Tính % Hoàn thành
-        df['TOTAL_DEAD_UNITS'] = df['T5 tử vong'] + df['T4 tử vong'] + df['T3 tử vong'] + df['T2 tử vong'] + df['T1 tử vong']
+        # 4. Tính % Hoàn thành
         df['KILL_PCT'] = (df['Tổng Điểm Tiêu Diệt'] / df['TARGET_KILL']) * 100
         df['DEAD_PCT'] = (df['TOTAL_DEAD_UNITS'] / df['TARGET_DEAD']) * 100
         
-        # Tính Rank theo Tổng Điểm (Kill + Dead Power)
+        # 5. Xếp Rank theo Tổng điểm (Kill + Dead Power)
         df['TOTAL_KPI_SCORE'] = df['Tổng Điểm Tiêu Diệt'] + df['DEAD_POWER_SCORE']
         df = df.sort_values(by='TOTAL_KPI_SCORE', ascending=False).reset_index(drop=True)
         df.insert(0, 'RANK', df.index + 1)
         
         return df
     except Exception as e:
-        st.error(f"Lỗi: {e}")
+        st.error(f"Lỗi hệ thống: {e}")
         return None
 
 df = load_data()
@@ -93,27 +98,19 @@ if df is not None:
         sel = st.selectbox("🔍 CHỌN CHIẾN BINH:", df['Tên Người Dùng'].unique())
         if sel:
             d = df[df['Tên Người Dùng'] == sel].iloc[0]
-            st.markdown(f"### 🎖️ {sel} (RANK #{int(d['RANK'])})")
             
-            # PROFILE GRID BOX
-            st.write("**📌 THÔNG TIN CƠ BẢN**")
+            st.write("**📌 CHỈ SỐ TRƯỚC & SAU CHIẾN**")
             c1, c2, c3, c4, c5 = st.columns(5)
-            c1.markdown(f'<div class="info-box"><div class="info-label">SỨC MẠNH</div><div class="info-value">⚡ {int(d["Sức Mạnh"]):,}</div></div>', unsafe_allow_html=True)
-            c2.markdown(f'<div class="info-box"><div class="info-label">KỶ LỤC POW</div><div class="info-value">🏆 {int(d["Kỷ Lực Sức Mạnh"]):,}</div></div>', unsafe_allow_html=True)
-            c3.markdown(f'<div class="info-box"><div class="info-label">TỔNG KILL</div><div class="info-value">🔥 {int(d["Tổng Điểm Tiêu Diệt"]):,}</div></div>', unsafe_allow_html=True)
-            c4.markdown(f'<div class="info-box"><div class="info-label">TÀI NGUYÊN</div><div class="info-value">📦 {int(d["Tài Nguyên Thu Thập"]):,}</div></div>', unsafe_allow_html=True)
-            c5.markdown(f'<div class="info-box"><div class="info-label">HỖ TRỢ LM</div><div class="info-value">🤝 {int(d["Hỗ Trợ Liên Minh"]):,}</div></div>', unsafe_allow_html=True)
+            # Dùng .get() để an toàn tuyệt đối, không lo KeyError
+            c1.markdown(f'<div class="info-box"><div class="info-label">KỶ LỤC (TRƯỚC)</div><div class="info-value">🏆 {int(d.get("Kỷ Lực Sức Mạnh", 0)):,}</div></div>', unsafe_allow_html=True)
+            c2.markdown(f'<div class="info-box"><div class="info-label">SỨC MẠNH (HIỆN TẠI)</div><div class="info-value">⚡ {int(d.get("Sức Mạnh", 0)):,}</div></div>', unsafe_allow_html=True)
+            c3.markdown(f'<div class="info-box"><div class="info-label">TỔNG KILL</div><div class="info-value">🔥 {int(d.get("Tổng Điểm Tiêu Diệt", 0)):,}</div></div>', unsafe_allow_html=True)
+            c4.markdown(f'<div class="info-box"><div class="info-label">TÀI NGUYÊN</div><div class="info-value">📦 {int(d.get("Tài Nguyên Thu Thập", 0)):,}</div></div>', unsafe_allow_html=True)
+            c5.markdown(f'<div class="info-box"><div class="info-label">RANK</div><div class="info-value">👑 #{int(d.get("RANK", 0))}</div></div>', unsafe_allow_html=True)
 
-            st.write("**🩸 CHI TIẾT TỬ VONG**")
-            d1, d2, d3, d4, d5 = st.columns(5)
-            d1.markdown(f'<div class="info-box"><div class="info-label">T5 (x10)</div><div class="info-value">💀 {int(d["T5 tử vong"]):,}</div></div>', unsafe_allow_html=True)
-            d2.markdown(f'<div class="info-box"><div class="info-label">T4 (x4)</div><div class="info-value">💀 {int(d["T4 tử vong"]):,}</div></div>', unsafe_allow_html=True)
-            d3.markdown(f'<div class="info-box"><div class="info-label">T3 (x3)</div><div class="info-value">💀 {int(d["T3 tử vong"]):,}</div></div>', unsafe_allow_html=True)
-            d4.markdown(f'<div class="info-box"><div class="info-label">T2 (x2)</div><div class="info-value">💀 {int(d["T2 tử vong"]):,}</div></div>', unsafe_allow_html=True)
-            d5.markdown(f'<div class="info-box"><div class="info-label">T1 (x1)</div><div class="info-value">💀 {int(d["T1 tử vong"]):,}</div></div>', unsafe_allow_html=True)
-
-            # TIẾN ĐỘ KPI
+            # TIẾN ĐỘ KPI VỚI MỤC TIÊU TỪ KỶ LỤC POW
             st.write("---")
+            st.write(f"**📊 TIẾN ĐỘ KPI (DỰA TRÊN MỐC {int(d.get('Kỷ Lực Sức Mạnh', 0)/1_000_000)}M POW)**")
             ck1, ck2 = st.columns(2)
             with ck1:
                 st.markdown(f'<p class="target-text">🎯 MỤC TIÊU KILL: {int(d["TARGET_KILL"]):,}</p>', unsafe_allow_html=True)
@@ -125,7 +122,6 @@ if df is not None:
                 st.plotly_chart(fig_d, use_container_width=True)
 
     with tab2:
-        st.subheader("🏆 BẢNG XẾP HẠNG KPI")
-        # Thêm cột TOTAL_KPI_SCORE ở cuối cùng
-        view_df = df[['RANK', 'Tên Người Dùng', 'Sức Mạnh', 'Tổng Điểm Tiêu Diệt', 'TOTAL_DEAD_UNITS', 'KILL_PCT', 'DEAD_PCT', 'TOTAL_KPI_SCORE']]
-        st.dataframe(view_df.style.format({'Sức Mạnh':'{:,.0f}','Tổng Điểm Tiêu Diệt':'{:,.0f}','TOTAL_DEAD_UNITS':'{:,.0f}','KILL_PCT':'{:.1f}%','DEAD_PCT':'{:.1f}%','TOTAL_KPI_SCORE':'{:,.0f}'}), use_container_width=True, height=600)
+        st.subheader("🏆 CHI TIẾT HOÀN THÀNH KPI")
+        view_df = df[['RANK', 'Tên Người Dùng', 'Kỷ Lực Sức Mạnh', 'Sức Mạnh', 'KILL_PCT', 'DEAD_PCT', 'TOTAL_KPI_SCORE']]
+        st.dataframe(view_df.style.format({'Kỷ Lực Sức Mạnh':'{:,.0f}','Sức Mạnh':'{:,.0f}','KILL_PCT':'{:.1f}%','DEAD_PCT':'{:.1f}%','TOTAL_KPI_SCORE':'{:,.0f}'}), use_container_width=True, height=600)
