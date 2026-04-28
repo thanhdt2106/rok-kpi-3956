@@ -21,8 +21,6 @@ TEXTS = {
         "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT", 
         "target_kill": "ĐẠT: ", "target_dead": "ĐẠT: ",
         "general_stats": "📊 TỔNG QUÁT", "kill_stats": "⚔️ KILL", "dead_stats": "💀 DEAD", "rss_stats": "🌾 THU NHẬP",
-        "col_rank": "HẠNG 🏆", "col_name": "CHIẾN BINH 🥷", "col_power": "SỨC MẠNH 🛡️",
-        "col_kill": "ĐIỂM KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "LÍNH CHẾT 💀", "col_kpi_dead": "KPI DEAD ⚰️",
         "id_label": "ID", "name_label": "Tên"
     },
     "EN": {
@@ -33,8 +31,6 @@ TEXTS = {
         "detail_title": "📌 FULL STATISTICS", 
         "target_kill": "REACHED: ", "target_dead": "REACHED: ",
         "general_stats": "📊 GENERAL", "kill_stats": "⚔️ KILL", "dead_stats": "💀 DEAD", "rss_stats": "🌾 GATHERED",
-        "col_rank": "RANK 🏆", "col_name": "COMMANDER 🥷", "col_power": "POWER 🛡️",
-        "col_kill": "KILL POINTS ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "DEAD UNITS 💀", "col_kpi_dead": "KPI DEAD ⚰️",
         "id_label": "ID", "name_label": "Name"
     }
 }
@@ -52,23 +48,21 @@ def sync_search_callback():
 
 L = TEXTS[st.session_state.lang]
 
-# --- 5. CSS CUSTOM (FIXED & OPTIMIZED) ---
+# --- 5. CSS CUSTOM (LOẠI BỎ PHẦN XÓA KHOẢNG ĐEN GÂY LỖI) ---
 st.markdown(f"""
     <style>
-    /* Ẩn header mặc định và xóa khoảng trắng đỉnh */
+    /* Chỉ ẩn Header mặc định của Streamlit */
     header[data-testid="stHeader"] {{display: none !important;}}
-    .block-container {{ padding-top: 5px !important; padding-bottom: 0px !important; }}
     
     .stApp {{ background-color: #0d1117; color: #c9d1d9; }}
     
-    /* Sticky Header: Giữ thanh search luôn ở đỉnh */
+    /* Sticky Header: Giữ thanh search luôn ở đỉnh để không bị bàn phím che */
     [data-testid="stVerticalBlock"] > div:first-child {{
         position: sticky;
         top: 0;
         z-index: 999;
         background-color: #0d1117;
-        padding-top: 10px;
-        padding-bottom: 10px;
+        padding: 10px 0;
     }}
     
     .main-header {{ 
@@ -81,9 +75,6 @@ st.markdown(f"""
     .info-label {{ color: #8b949e; font-size: 11px; font-weight: bold; text-transform: uppercase; }}
     .info-value {{ color: #ffffff; font-size: 16px; font-weight: 800; }}
     .gauge-footer {{ color: #58a6ff; font-size: 13px; font-weight: 800; text-align: center; margin-top: -35px; }}
-    
-    /* Tối ưu tabs */
-    button[data-baseweb="tab"] {{ padding: 10px 15px !important; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -134,16 +125,13 @@ if res:
     with tab1:
         if choice != "":
             d = df[df['Full_Search'] == choice].iloc[0]
-            
-            # --- 4 HỘP KPI ---
             m = st.columns(4)
             m[0].markdown(f'<div class="info-box"><div class="info-label">{L["rank"]}</div><div class="info-value" style="color:#FFD700;">#{int(d["H_RAW"])}</div></div>', unsafe_allow_html=True)
             m[1].markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>', unsafe_allow_html=True)
             m[2].markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
             m[3].markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
             
-            # --- CHI TIẾT THÔNG SỐ ---
-            with st.expander(L["detail_title"], expanded=False):
+            with st.expander(L["detail_title"]):
                 st.markdown(f"**{L['general_stats']}**")
                 g = st.columns(3)
                 g[0].markdown(f'<div class="info-box"><div class="info-label">ID</div><div class="info-value">{d[c_id]}</div></div>', unsafe_allow_html=True)
@@ -160,7 +148,6 @@ if res:
                 for i in range(5, 0, -1):
                     d_cols[5-i].markdown(f'<div class="info-box"><div class="info-label">T{i} DEAD</div><div class="info-value">{int(d[f"T{i} tử vong"]):,}</div></div>', unsafe_allow_html=True)
 
-            # --- BIỂU ĐỒ GAUGE ---
             g1, g2 = st.columns(2)
             with g1:
                 fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], number={'suffix': "%", 'font':{'size':24}}, gauge={'bar': {'color': "#00FFFF"}, 'axis': {'range': [0, 100]}}))
@@ -177,5 +164,5 @@ if res:
 
     with tab2:
         v_df = df[['H_RAW', c_name, c_pow, c_kill, 'K_PCT', 'SUM_DEAD', 'D_PCT']].copy()
-        v_df.columns = [L['col_rank'], L['col_name'], L['col_power'], L['col_kill'], L['col_kpi_kill'], L['col_dead'], L['col_kpi_dead']]
-        st.dataframe(v_df.style.format({L['col_power']: '{:,.0f}', L['col_kill']: '{:,.0f}', L['col_dead']: '{:,.0f}', L['col_kpi_kill']: '{:.1f}%', L['col_kpi_dead']: '{:.1f}%'}), use_container_width=True, height=500)
+        st.dataframe(v_df, use_container_width=True, height=500)
+        
