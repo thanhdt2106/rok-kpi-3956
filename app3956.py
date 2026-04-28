@@ -10,15 +10,11 @@ TEXTS = {
     "VN": {
         "header": "HỆ THỐNG KPI - SHARED HOUSE 3956",
         "tab1": "👤 HỒ SƠ CHI TIẾT", "tab2": "📊 TỔNG QUAN QUÂN ĐOÀN",
-        "placeholder": "Nhập ID (chính xác) hoặc Tên...",
+        "placeholder": "Nhập ID (chính xác) hoặc tên vào đây...",
         "rank": "🏆 HẠNG", "power_now": "🛡️ SỨC MẠNH", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 THÔNG SỐ CHI TIẾT", "target_kill": "ĐẠT: ", "target_dead": "ĐẠT: ",
         "col_rank": "HẠNG 🏆", "col_name": "CHIẾN BINH 🥷", "col_power": "SỨC MẠNH 🛡️",
-        "col_kill": "ĐIỂM KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "LÍNH CHẾT 💀", "col_kpi_dead": "KPI DEAD ⚰️",
-        "map_id": "ID nhân vật", "map_name": "Tên Người Dùng", "map_pow": "Sức Mạnh",
-        "map_record": "Kỷ Lục Sức Mạnh", "map_kill": "Tổng Điểm Tiêu Diệt",
-        "map_t5_k": "Tổng Tiêu Diệt T5", "map_t4_k": "Tổng Tiêu Diệt T4",
-        "map_t5_d": "T5 tử vong", "map_t4_d": "T4 tử vong", "map_t3_d": "T3 tử vong"
+        "col_kill": "ĐIỂM KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "LÍNH CHẾT 💀", "col_kpi_dead": "KPI DEAD ⚰️"
     },
     "EN": {
         "header": "KPI SYSTEM - SHARED HOUSE 3956",
@@ -27,15 +23,11 @@ TEXTS = {
         "rank": "🏆 RANK", "power_now": "🛡️ POWER", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 DETAILED STATISTICS", "target_kill": "REACHED: ", "target_dead": "REACHED: ",
         "col_rank": "RANK 🏆", "col_name": "COMMANDER 🥷", "col_power": "POWER 🛡️",
-        "col_kill": "KILL POINTS ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "DEAD UNITS 💀", "col_kpi_dead": "KPI DEAD ⚰️",
-        "map_id": "Character ID", "map_name": "Username", "map_pow": "Power",
-        "map_record": "Power Record", "map_kill": "Total Kills",
-        "map_t5_k": "T5 Kills", "map_t4_k": "T4 Kills",
-        "map_t5_d": "T5 Dead", "map_t4_d": "T4 Dead", "map_t3_d": "T3 Dead"
+        "col_kill": "KILL POINTS ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "DEAD UNITS 💀", "col_kpi_dead": "KPI DEAD ⚰️"
     }
 }
 
-# --- 3. CSS (XÓA TRẦN, FIX MOBILE 2 CỘT) ---
+# --- 3. CSS TỔNG LỰC (XÓA HEADER, FIX 2 CỘT MOBILE) ---
 st.markdown("""
     <style>
     header[data-testid="stHeader"] {display: none !important;}
@@ -55,11 +47,12 @@ st.markdown("""
     @media (max-width: 768px) {
         [data-testid="column"] { width: 50% !important; flex: 1 1 50% !important; min-width: 50% !important; }
         div[data-testid="stHorizontalBlock"] { gap: 0px !important; }
+        .stImage > img { width: 100% !important; }
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 4. LOAD DATA ---
+# --- 4. DATA ENGINE ---
 SHEET_ID = '1MJQSE3siwFWmQNdJmbbJ6RsilvcoxWTu-r6h-UdHugE'
 URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=351056493'
 
@@ -86,6 +79,7 @@ if res:
     df, c_id, c_name, c_pow, c_kill = res
     st.markdown(f'<div class="main-header">{TEXTS["VN"]["header"]}</div>', unsafe_allow_html=True)
     
+    # Dòng Ngôn ngữ & Tìm kiếm
     col_lang, col_search = st.columns([1, 3])
     with col_lang:
         lang = st.radio("L", ["VN", "EN"], horizontal=True, label_visibility="collapsed")
@@ -99,7 +93,7 @@ if res:
         target_commander = None
         
         if search_input:
-            # 1. LOGIC TÌM KIẾM THEO ID (PHẢI FULL)
+            # 1. LOGIC ID: Phải nhập full
             if search_input.isdigit():
                 match = df[df[c_id].astype(str) == search_input]
                 if not match.empty:
@@ -107,19 +101,17 @@ if res:
                 else:
                     st.error("❌ ID không tồn tại!")
             
-            # 2. LOGIC TÌM KIẾM THEO TÊN (HIỆN GỢI Ý)
+            # 2. LOGIC TÊN: Gõ là hiện list gợi ý ngay bên dưới
             else:
                 matches = df[df[c_name].str.contains(search_input, case=False, na=False)]
                 if not matches.empty:
-                    if len(matches) > 1:
-                        sel = st.selectbox("🔍 Tìm thấy nhiều kết quả, vui lòng chọn:", matches[c_name].tolist())
-                        target_commander = matches[matches[c_name] == sel].iloc[0]
-                    else:
-                        target_commander = matches.iloc[0]
+                    # Tạo selectbox gợi ý tên từ ký tự đã gõ
+                    sel = st.selectbox("🔍 Danh sách gợi ý:", matches[c_name].tolist(), label_visibility="collapsed")
+                    target_commander = matches[matches[c_name] == sel].iloc[0]
                 else:
-                    st.error("❌ Không tìm thấy tên này!")
+                    st.error("❌ Không tìm thấy tên!")
 
-        # HIỂN THỊ PROFILE NẾU TÌM THẤY
+        # HIỂN THỊ KẾT QUẢ
         if target_commander is not None:
             d = target_commander
             m1, m2, m3, m4 = st.columns(4)
@@ -129,13 +121,16 @@ if res:
             m4.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
             
             with st.expander(L["detail_title"], expanded=True):
-                box_map = [(L["map_id"], c_id), (L["map_name"], c_name), (L["map_pow"], c_pow), (L["map_record"], "Kỷ Lục Sức Mạnh"), (L["map_t5_d"], "T5 tử vong"), (L["map_t4_d"], "T4 tử vong"), (L["map_t3_d"], "T3 tử vong"), (L["map_kill"], c_kill), (L["map_t5_k"], "Tổng Tiêu Diệt T5"), (L["map_t4_k"], "Tổng Tiêu Diệt T4")]
+                # Các cột thông số chi tiết
                 det_cols = st.columns(5)
-                for idx, (label, col_key) in enumerate(box_map):
-                    val = d[col_key] if col_key in d else 0
+                # Tự động map dữ liệu vào 5 cột
+                keys = [("ID", c_id), ("NAME", c_name), ("POWER", c_pow), ("T5 KILL", "Tổng Tiêu Diệt T5"), ("T4 KILL", "Tổng Tiêu Diệt T4"), ("T5 DEAD", "T5 tử vong"), ("T4 DEAD", "T4 tử vong"), ("T3 DEAD", "T3 tử vong"), ("TOTAL KILL", c_kill)]
+                for i, (lab, k) in enumerate(keys):
+                    val = d[k] if k in d else 0
                     txt = f"{int(val):,}" if isinstance(val, (int, float)) else val
-                    det_cols[idx % 5].markdown(f'<div class="info-box"><div class="info-label">{label}</div><div class="info-value" style="font-size:14px;">{txt}</div></div>', unsafe_allow_html=True)
+                    det_cols[i % 5].markdown(f'<div class="info-box"><div class="info-label">{lab}</div><div class="info-value" style="font-size:14px;">{txt}</div></div>', unsafe_allow_html=True)
 
+            # 2 VÒNG TRÒN KPI (FIX NẰM NGANG CHO MOBILE)
             g1, g2 = st.columns(2)
             with g1:
                 fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], number={'suffix': "%", 'font':{'size':24}}, gauge={'bar': {'color': "#00FFFF"}}))
@@ -148,7 +143,9 @@ if res:
                 st.plotly_chart(fig_d, use_container_width=True, config={'displayModeBar': False})
                 st.markdown(f'<div class="gauge-footer">{L["target_dead"]}{int(d["SUM_DEAD"]/1000)}K</div>', unsafe_allow_html=True)
         else:
-            st.info("💡 " + L["placeholder"])
+            # THAY THẾ DÒNG CHỮ BẰNG ẢNH KHI CHƯA TÌM KIẾM
+            st.image("https://raw.githubusercontent.com/tên-user/tên-repo/main/image_5ca61f.jpg", use_column_width=True)
+            # Lưu ý: Thay link trên bằng link ảnh trực tiếp của bạn hoặc để 'image_5ca61f.jpg' nếu file cùng thư mục code
 
     with tab2:
         v_df = df[['H_RAW', c_name, c_pow, c_kill, 'K_PCT', 'SUM_DEAD', 'D_PCT']].copy()
