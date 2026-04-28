@@ -43,7 +43,6 @@ TEXTS = {
     }
 }
 
-# Hàm xử lý khi đổi ngôn ngữ hoặc chọn tên
 def on_lang_change():
     st.session_state.lang = st.session_state.radio_lang
 
@@ -52,20 +51,40 @@ def on_choice_change():
 
 L = TEXTS[st.session_state.lang]
 
-# --- 4. CSS ---
+# --- 4. CSS CUSTOM (BAO GỒM HIỆU ỨNG KÍNH LÚP) ---
 st.markdown(f"""
     <style>
     header[data-testid="stHeader"] {{display: none !important;}}
     .stApp {{ background-color: #0d1117; color: #c9d1d9; }}
+    
     .main-header {{ 
         background: linear-gradient(90deg, #00FFFF, #58a6ff); 
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
         text-align: center; font-size: clamp(22px, 5vw, 32px); font-weight: 900; padding-bottom: 15px;
     }}
+
+    /* Hiệu ứng kính lúp cho ô Search */
+    div[data-testid="stSelectbox"] > div:first-child {{
+        position: relative;
+    }}
+    div[data-testid="stSelectbox"]::before {{
+        content: "🔍";
+        position: absolute;
+        left: 10px;
+        top: 8px;
+        z-index: 1;
+        font-size: 16px;
+        opacity: 0.6;
+    }}
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {{
+        padding-left: 35px !important; /* Đẩy chữ placeholder sang phải để không đè icon */
+    }}
+
     .info-box {{ background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; min-height: 70px; }}
     .info-label {{ color: #8b949e; font-size: 11px; font-weight: bold; text-transform: uppercase; }}
     .info-value {{ color: #ffffff; font-size: 16px; font-weight: 800; }}
     .gauge-footer {{ color: #58a6ff; font-size: 13px; font-weight: 800; text-align: center; margin-top: -35px; }}
+    
     @media (max-width: 768px) {{
         [data-testid="column"] {{ width: 50% !important; flex: 1 1 50% !important; min-width: 50% !important; }}
     }}
@@ -104,7 +123,7 @@ if res:
         st.radio("L", ["VN", "EN"], key="radio_lang", on_change=on_lang_change, 
                  index=0 if st.session_state.lang == "VN" else 1, horizontal=True, label_visibility="collapsed")
     with col_search:
-        # Sử dụng key để Streamlit nhớ giá trị đã chọn sau khi rerun
+        # SELECTBOX VỚI ICON KÍNH LÚP QUA CSS
         choice = st.selectbox("S", options=[""] + df['Search_Display'].tolist(), 
                               key="search_box", on_change=on_choice_change,
                               placeholder=L["placeholder"], label_visibility="collapsed")
@@ -116,14 +135,14 @@ if res:
         if current_selection != "":
             d = df[df['Search_Display'] == current_selection].iloc[0]
             
-            # --- 4 HỘP CHỈ SỐ ---
+            # 4 Hộp chỉ số
             m1, m2, m3, m4 = st.columns(4)
             m1.markdown(f'<div class="info-box"><div class="info-label">{L["rank"]}</div><div class="info-value" style="color:#FFD700;">#{int(d["H_RAW"])}</div></div>', unsafe_allow_html=True)
             m2.markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>', unsafe_allow_html=True)
             m3.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
             m4.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
             
-            # --- CHI TIẾT (LUÔN ĐÓNG KHI CHỌN MỚI) ---
+            # Chi tiết (Expanded=False)
             with st.expander(L["detail_title"], expanded=False):
                 st.markdown(f"**{L['general_stats']}**")
                 c1, c2, c3, c4, c5 = st.columns(5)
@@ -143,7 +162,7 @@ if res:
                 for i, t in enumerate(['T5', 'T4', 'T3', 'T2', 'T1']):
                     d_cols[i].markdown(f'<div class="info-box"><div class="info-label">{t} Dead</div><div class="info-value">{int(d[f"{t} tử vong"]):,}</div></div>', unsafe_allow_html=True)
 
-            # --- 2 VÒNG TRÒN KPI ---
+            # 2 Vòng tròn KPI
             g1, g2 = st.columns(2)
             with g1:
                 fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], number={'suffix': "%", 'font':{'size':24}}, gauge={'bar': {'color': "#00FFFF"}, 'axis': {'range': [0, 100]}}))
