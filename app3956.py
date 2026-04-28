@@ -12,7 +12,7 @@ TEXTS = {
         "tab1": "👤 HỒ SƠ CHI TIẾT", "tab2": "📊 TỔNG QUAN QUÂN ĐOÀN",
         "placeholder": "Thêm ID hoặc tên của bạn ...",
         "rank": "🏆 HẠNG", "power_now": "🛡️ SỨC MẠNH", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
-        "detail_title": "📌 THÔNG SỐ CHI TIẾT ĐẦY ĐỦ", "target_kill": "ĐẠT: ", "target_dead": "ĐẠT: ",
+        "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT", "target_kill": "ĐẠT: ", "target_dead": "ĐẠT: ",
         "col_rank": "HẠNG 🏆", "col_name": "CHIẾN BINH 🥷", "col_power": "SỨC MẠNH 🛡️",
         "col_kill": "ĐIỂM KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "LÍNH CHẾT 💀", "col_kpi_dead": "KPI DEAD ⚰️"
     },
@@ -21,7 +21,7 @@ TEXTS = {
         "tab1": "👤 DETAILED PROFILE", "tab2": "📊 ALLIANCE OVERVIEW",
         "placeholder": "Add your ID or Name ...",
         "rank": "🏆 RANK", "power_now": "🛡️ POWER", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
-        "detail_title": "📌 FULL DETAILED STATISTICS", "target_kill": "REACHED: ", "target_dead": "REACHED: ",
+        "detail_title": "📌 VIEW FULL STATISTICS", "target_kill": "REACHED: ", "target_dead": "REACHED: ",
         "col_rank": "RANK 🏆", "col_name": "COMMANDER 🥷", "col_power": "POWER 🛡️",
         "col_kill": "KILL POINTS ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "DEAD UNITS 💀", "col_kpi_dead": "KPI DEAD ⚰️"
     }
@@ -79,7 +79,6 @@ if res:
     L_VN = TEXTS["VN"]
     st.markdown(f'<div class="main-header">{L_VN["header"]}</div>', unsafe_allow_html=True)
     
-    # Giao diện chọn ngôn ngữ và tìm kiếm
     col_lang, col_search = st.columns([1, 4])
     with col_lang:
         lang = st.radio("L", ["VN", "EN"], horizontal=True, label_visibility="collapsed")
@@ -102,8 +101,8 @@ if res:
             m3.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
             m4.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
             
-            # --- THÔNG SỐ CHI TIẾT ĐẦY ĐỦ ---
-            with st.expander(L["detail_title"], expanded=True):
+            # --- THÔNG SỐ CHI TIẾT: KHÔNG MỞ SẴN (expanded=False) ---
+            with st.expander(L["detail_title"], expanded=False):
                 st.markdown("**📊 THÔNG SỐ TỔNG QUÁT**")
                 c1, c2, c3, c4, c5 = st.columns(5)
                 c1.markdown(f'<div class="info-box"><div class="info-label">ID</div><div class="info-value">{d[c_id]}</div></div>', unsafe_allow_html=True)
@@ -113,10 +112,10 @@ if res:
                 c5.markdown(f'<div class="info-box"><div class="info-label">Tổng Tử</div><div class="info-value">{int(d["SUM_DEAD"]):,}</div></div>', unsafe_allow_html=True)
                 
                 st.markdown("**⚔️ CHI TIẾT TIÊU DIỆT (KILL)**")
-                k1, k2, k3, k4,  = st.columns(4)
-                for i, t in enumerate(['T5', 'T4', 'T3', 'T2',]):
+                k1, k2, k3, k4, k5 = st.columns(5)
+                for i, t in enumerate(['T5', 'T4', 'T3', 'T2', 'T1']):
                     val = d[f'Tổng Tiêu Diệt {t}']
-                    [k1, k2, k3, k4,][i].markdown(f'<div class="info-box"><div class="info-label">{t} Kill</div><div class="info-value">{int(val):,}</div></div>', unsafe_allow_html=True)
+                    [k1, k2, k3, k4, k5][i].markdown(f'<div class="info-box"><div class="info-label">{t} Kill</div><div class="info-value">{int(val):,}</div></div>', unsafe_allow_html=True)
 
                 st.markdown("**💀 CHI TIẾT TỬ VONG (DEAD)**")
                 d_cols = st.columns(5)
@@ -137,7 +136,7 @@ if res:
                 st.plotly_chart(fig_d, use_container_width=True, config={'displayModeBar': False})
                 st.markdown(f'<div class="gauge-footer">{L["target_dead"]}{int(d["SUM_DEAD"]/1000)}K / 400K</div>', unsafe_allow_html=True)
         else:
-            # SỬ DỤNG LINK ẢNH MỚI CỦA BẠN
+            # ẢNH MEME BANNER
             st.image("https://github.com/thanhdt2106/rok-kpi-3956/blob/main/meme1.png?raw=true", use_column_width=True)
 
     with tab2:
