@@ -10,9 +10,9 @@ TEXTS = {
     "VN": {
         "header": "HỆ THỐNG KPI - SHARED HOUSE 3956",
         "tab1": "👤 HỒ SƠ CHI TIẾT", "tab2": "📊 TỔNG QUAN QUÂN ĐOÀN",
-        "placeholder": "Nhập ID hoặc Tên chiến binh...",
+        "placeholder": "Nhập ID hoặc Tên chiến binh để xem Profile...",
         "rank": "🏆 HẠNG", "power_now": "🛡️ SỨC MẠNH", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
-        "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT từ Sheet", "target_kill": "ĐẠT: ", "target_dead": "ĐẠT: ",
+        "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT", "target_kill": "ĐẠT: ", "target_dead": "ĐẠT: ",
         "col_rank": "HẠNG 🏆", "col_name": "CHIẾN BINH 🥷", "col_power": "SỨC MẠNH 🛡️",
         "col_kill": "ĐIỂM KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "LÍNH CHẾT 💀", "col_kpi_dead": "KPI DEAD ⚰️",
         "map_id": "ID nhân vật", "map_name": "Tên Người Dùng", "map_pow": "Sức Mạnh",
@@ -23,7 +23,7 @@ TEXTS = {
     "EN": {
         "header": "KPI SYSTEM - SHARED HOUSE 3956",
         "tab1": "👤 DETAILED PROFILE", "tab2": "📊 ALLIANCE OVERVIEW",
-        "placeholder": "Enter ID or Commander Name...",
+        "placeholder": "Enter ID or Name to view Profile...",
         "rank": "🏆 RANK", "power_now": "🛡️ POWER", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 VIEW DETAILED STATISTICS", "target_kill": "REACHED: ", "target_dead": "REACHED: ",
         "col_rank": "RANK 🏆", "col_name": "COMMANDER 🥷", "col_power": "POWER 🛡️",
@@ -35,23 +35,39 @@ TEXTS = {
     }
 }
 
-# --- 3. CSS TỔNG LỰC ---
+# --- 3. CSS TỔNG LỰC (DỌN DẸP & FIX MOBILE) ---
 st.markdown("""
     <style>
+    /* Xóa triệt để Header/Sidebar */
     header[data-testid="stHeader"] {display: none !important;}
     [data-testid="stSidebarNav"], [data-testid="collapsedControl"] {display: none;}
     .stApp { background-color: #0d1117; color: #c9d1d9; }
     .block-container { padding-top: 1rem !important; }
+
+    /* Tiêu đề */
     .main-header { 
         background: linear-gradient(90deg, #00FFFF, #58a6ff); 
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
-        text-align: center; font-size: clamp(20px, 5vw, 32px); font-weight: 900; padding-bottom: 10px;
+        text-align: center; font-size: clamp(20px, 5vw, 32px); font-weight: 900; padding-bottom: 15px;
     }
+
+    /* Info Boxes */
     .info-box { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 5px; }
     .info-label { color: #8b949e; font-size: 11px; font-weight: bold; text-transform: uppercase; }
     .info-value { color: #ffffff; font-size: 18px; font-weight: 800; }
-    .gauge-footer { color: #58a6ff; font-size: 12px; font-weight: 800; text-align: center; margin-top: -35px; }
     
+    /* Gauge Footer */
+    .gauge-footer { color: #58a6ff; font-size: 12px; font-weight: 800; text-align: center; margin-top: -35px; }
+
+    /* Tinh chỉnh input tìm kiếm */
+    div[data-testid="stTextInput"] input {
+        background-color: #161b22 !important;
+        color: #ffffff !important;
+        border: 1px solid #30363d !important;
+        border-radius: 8px !important;
+    }
+
+    /* Fix 2 cột Mobile */
     @media (max-width: 768px) {
         [data-testid="column"] { width: 50% !important; flex: 1 1 50% !important; min-width: 50% !important; }
         div[data-testid="stHorizontalBlock"] { gap: 0px !important; }
@@ -86,26 +102,27 @@ if res:
     df, c_id, c_name, c_pow, c_kill = res
     st.markdown(f'<div class="main-header">{TEXTS["VN"]["header"]}</div>', unsafe_allow_html=True)
     
-    # --- THANH TÌM KIẾM & NGÔN NGỮ ---
-    col_lang, col_search = st.columns([1, 4])
+    # --- DÒNG CHỌN NGÔN NGỮ & TÌM KIẾM ---
+    col_lang, col_search = st.columns([1, 3])
     with col_lang:
-        lang = st.radio("L:", ["VN", "EN"], horizontal=True, label_visibility="collapsed")
+        lang = st.radio("L", ["VN", "EN"], horizontal=True, label_visibility="collapsed")
         L = TEXTS[lang]
     with col_search:
+        # Placeholder nằm TRONG thanh tìm kiếm
         search_query = st.text_input("S", placeholder=L["placeholder"], label_visibility="collapsed")
 
     tab1, tab2 = st.tabs([L["tab1"], L["tab2"]])
     
     with tab1:
-        # Lọc dữ liệu theo search
         if search_query:
+            # Logic tìm kiếm
             if search_query.isdigit():
                 f_df = df[df[c_id].astype(str) == search_query]
             else:
                 f_df = df[df[c_name].str.contains(search_query, case=False, na=False)]
             
             if not f_df.empty:
-                # Nếu nhiều kết quả, cho chọn. Nếu 1 kết quả, lấy luôn.
+                # Gợi ý nếu trùng tên
                 if len(f_df) > 1:
                     sel_name = st.selectbox("Gợi ý cho bạn:", f_df[c_name].tolist())
                     d = f_df[f_df[c_name] == sel_name].iloc[0]
@@ -139,11 +156,13 @@ if res:
                     st.plotly_chart(fig_d, use_container_width=True, config={'displayModeBar': False})
                     st.markdown(f'<div class="gauge-footer">{L["target_dead"]}{int(d["SUM_DEAD"]/1000)}K</div>', unsafe_allow_html=True)
             else:
-                st.error("Không tìm thấy dữ liệu phù hợp!")
+                st.warning("⚠️ Không tìm thấy kết quả phù hợp.")
         else:
-            st.info("👋 " + L["placeholder"])
+            # Giao diện khi chưa tìm kiếm (Để trống hoặc hiện hướng dẫn nhẹ)
+            st.markdown(f"<div style='text-align:center; padding: 50px; color:#8b949e;'>{L['placeholder']}</div>", unsafe_allow_html=True)
 
     with tab2:
+        # Bảng tổng quát vẫn hiện bình thường
         v_df = df[['H_RAW', c_name, c_pow, c_kill, 'K_PCT', 'SUM_DEAD', 'D_PCT']].copy()
         v_df.columns = [L['col_rank'], L['col_name'], L['col_power'], L['col_kill'], L['col_kpi_kill'], L['col_dead'], L['col_kpi_dead']]
         st.dataframe(v_df.style.format({L['col_power']: '{:,.0f}', L['col_kill']: '{:,.0f}', L['col_dead']: '{:,.0f}', L['col_kpi_kill']: '{:.1f}%', L['col_kpi_dead']: '{:.1f}%'}), use_container_width=True, height=600)
