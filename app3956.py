@@ -13,19 +13,12 @@ st.markdown("""
         color: #58a6ff; text-align: center; font-size: 28px; font-weight: bold;
         padding: 10px; border-bottom: 1px solid #30363d; margin-bottom: 20px;
     }
-    /* Grid Profile */
-    .info-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-        margin-bottom: 20px;
-    }
     .info-box {
         background: #161b22; border: 1px solid #30363d; border-radius: 10px;
-        padding: 15px; text-align: center;
+        padding: 15px; text-align: center; margin-bottom: 10px;
     }
-    .info-label { color: #8b949e; font-size: 12px; font-weight: bold; text-transform: uppercase; }
-    .info-value { color: #ffffff; font-size: 18px; font-weight: bold; margin-top: 8px; }
+    .info-label { color: #8b949e; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+    .info-value { color: #ffffff; font-size: 16px; font-weight: bold; margin-top: 5px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -38,12 +31,18 @@ URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=
 def load_data():
     try:
         df = pd.read_csv(URL)
+        # Chuẩn hóa tên cột: xóa khoảng trắng thừa ở đầu/cuối
         df.columns = [str(c).strip() for c in df.columns]
         
-        # Chuyển đổi toàn bộ cột số liệu
-        numeric_cols = df.columns.drop(['Tên Người Dùng', 'ID nhân vật'])
+        # Chuyển đổi dữ liệu số (bỏ qua cột tên và ID)
+        numeric_cols = ['Sức Mạnh', 'Kỷ Lực Sức Mạnh', 'T5 tử vong', 'T4 tử vong', 'T3 tử vong', 
+                        'T2 tử vong', 'T1 tử vong', 'Tổng Điểm Tiêu Diệt', 'Tài Nguyên Thu Thập',
+                        'Tổng Tiêu Diệt T5', 'Tổng Tiêu Diệt T4', 'Tổng Tiêu Diệt T3', 
+                        'Tổng Tiêu Diệt T2', 'Hỗ Trợ Liên Minh']
+        
         for col in numeric_cols:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
         # A. TÍNH ĐIỂM DEAD THEO TRỌNG SỐ POWER MỚI
         # T5=10, T4=4, T3=3, T2=2, T1=1
@@ -62,7 +61,7 @@ def load_data():
         
         return df
     except Exception as e:
-        st.error(f"Lỗi nạp dữ liệu: {e}")
+        st.error(f"Lỗi nạp dữ liệu hoặc sai tên cột: {e}")
         return None
 
 df = load_data()
@@ -74,71 +73,48 @@ if df is not None:
     tab1, tab2 = st.tabs(["👤 HỒ SƠ CHI TIẾT", "📊 BẢNG XẾP HẠNG"])
     
     with tab1:
-        sel = st.selectbox("🔍 CHỌN CHIẾN BINH:", df['Tên Người Dùng'].unique())
+        names = sorted(df['Tên Người Dùng'].unique())
+        sel = st.selectbox("🔍 CHỌN CHIẾN BINH:", names)
         if sel:
             d = df[df['Tên Người Dùng'] == sel].iloc[0]
-            
             st.markdown(f"### 🎖️ {sel} (RANK #{int(d['RANK'])})")
             
-            # --- HIỂN THỊ DẠNG Ô BOX CÓ ICON CHO TẤT CẢ THÔNG TIN ---
-            # Nhóm 1: Thông tin cơ bản
+            # NHÓM 1: CƠ BẢN
             st.write("**📌 THÔNG TIN CƠ BẢN**")
             c1, c2, c3, c4 = st.columns(4)
             c1.markdown(f'<div class="info-box"><div class="info-label">ID</div><div class="info-value">🆔 {d["ID nhân vật"]}</div></div>', unsafe_allow_html=True)
-            c2.markdown(f'<div class="info-box"><div class="info-label">SỨC MẠNH</div><div class="info-value">⚡ {int(d["Sức Mạnh"]):,}</div></div>', unsafe_allow_html=True)
-            c3.markdown(f'<div class="info-box"><div class="info-label">KỶ LỤC POW</div><div class="info-value">🏆 {int(d["Kỷ Lực Sức Mạnh"]):,}</div></div>', unsafe_allow_html=True)
-            c4.markdown(f'<div class="info-box"><div class="info-label">TÀI NGUYÊN</div><div class="info-value">📦 {int(d["Tài Nguyên Thu Thập"]):,}</div></div>', unsafe_allow_html=True)
+            c2.markdown(f'<div class="info-box"><div class="info-label">SỨC MẠNH</div><div class="info-value">⚡ {int(d.get("Sức Mạnh", 0)):,}</div></div>', unsafe_allow_html=True)
+            c3.markdown(f'<div class="info-box"><div class="info-label">KỶ LỤC POW</div><div class="info-value">🏆 {int(d.get("Kỷ Lực Sức Mạnh", 0)):,}</div></div>', unsafe_allow_html=True)
+            c4.markdown(f'<div class="info-box"><div class="info-label">TÀI NGUYÊN</div><div class="info-value">📦 {int(d.get("Tài Nguyên Thu Thập", 0)):,}</div></div>', unsafe_allow_html=True)
 
-            # Nhóm 2: Chỉ số Tiêu diệt
+            # NHÓM 2: TIÊU DIỆT
             st.write("**⚔️ CHỈ SỐ TIÊU DIỆT**")
             k1, k2, k3, k4 = st.columns(4)
             k1.markdown(f'<div class="info-box"><div class="info-label">TỔNG ĐIỂM KILL</div><div class="info-value">🔥 {int(d["Tổng Điểm Tiêu Diệt"]):,}</div></div>', unsafe_allow_html=True)
-            k2.markdown(f'<div class="info-box"><div class="info-label">KILL T5</div><div class="info-value">🎖️ {int(d["Tổng Tiêu Diệt T5"]):,}</div></div>', unsafe_allow_html=True)
-            k3.markdown(f'<div class="info-box"><div class="info-label">KILL T4</div><div class="info-value">⚔️ {int(d["Tổng Tiêu Diệt T4"]):,}</div></div>', unsafe_allow_html=True)
+            k2.markdown(f'<div class="info-box"><div class="info-label">KILL T5/T4</div><div class="info-value">🎖️ {int(d["Tổng Tiêu Diệt T5"]):,}/{int(d["Tổng Tiêu Diệt T4"]):,}</div></div>', unsafe_allow_html=True)
+            k3.markdown(f'<div class="info-box"><div class="info-label">KILL T3/T2</div><div class="info-value">⚔️ {int(d["Tổng Tiêu Diệt T3"]):,}/{int(d["Tổng Tiêu Diệt T2"]):,}</div></div>', unsafe_allow_html=True)
             k4.markdown(f'<div class="info-box"><div class="info-label">HỖ TRỢ LM</div><div class="info-value">🤝 {int(d["Hỗ Trợ Liên Minh"]):,}</div></div>', unsafe_allow_html=True)
 
-            # Nhóm 3: Chỉ số Tử vong (Dead Power)
+            # NHÓM 3: TỬ VONG
             st.write("**🩸 CHỈ SỐ TỬ VONG (TRỌNG SỐ)**")
             d1, d2, d3, d4, d5 = st.columns(5)
-            d1.markdown(f'<div class="info-box"><div class="info-label">T5 DEAD (x10)</div><div class="info-value">💀 {int(d["T5 tử vong"]):,}</div></div>', unsafe_allow_html=True)
-            d2.markdown(f'<div class="info-box"><div class="info-label">T4 DEAD (x4)</div><div class="info-value">💀 {int(d["T4 tử vong"]):,}</div></div>', unsafe_allow_html=True)
-            d3.markdown(f'<div class="info-box"><div class="info-label">T3 DEAD (x3)</div><div class="info-value">💀 {int(d["T3 tử vong"]):,}</div></div>', unsafe_allow_html=True)
-            d4.markdown(f'<div class="info-box"><div class="info-label">T2 DEAD (x2)</div><div class="info-value">💀 {int(d["T2 tử vong"]):,}</div></div>', unsafe_allow_html=True)
-            d5.markdown(f'<div class="info-box"><div class="info-label">T1 DEAD (x1)</div><div class="info-value">💀 {int(d["T1 tử vong"]):,}</div></div>', unsafe_allow_html=True)
+            d1.markdown(f'<div class="info-box"><div class="info-label">T5 (x10)</div><div class="info-value">💀 {int(d["T5 tử vong"]):,}</div></div>', unsafe_allow_html=True)
+            d2.markdown(f'<div class="info-box"><div class="info-label">T4 (x4)</div><div class="info-value">💀 {int(d["T4 tử vong"]):,}</div></div>', unsafe_allow_html=True)
+            d3.markdown(f'<div class="info-box"><div class="info-label">T3 (x3)</div><div class="info-value">💀 {int(d["T3 tử vong"]):,}</div></div>', unsafe_allow_html=True)
+            d4.markdown(f'<div class="info-box"><div class="info-label">T2 (x2)</div><div class="info-value">💀 {int(d["T2 tử vong"]):,}</div></div>', unsafe_allow_html=True)
+            d5.markdown(f'<div class="info-box"><div class="info-label">T1 (x1)</div><div class="info-value">💀 {int(d["T1 tử vong"]):,}</div></div>', unsafe_allow_html=True)
 
-            # --- VÒNG TRÒN KPI ---
+            # VÒNG TRÒN KPI
             st.write("---")
             ck1, ck2 = st.columns(2)
             with ck1:
-                # KPI không giới hạn 100% (Để Gauge max là mức cao nhất của team hiện tại)
-                fig_k = go.Figure(go.Indicator(
-                    mode = "gauge+number", value = d['Tổng Điểm Tiêu Diệt'],
-                    title = {'text': "TIẾN ĐỘ TIÊU DIỆT", 'font': {'color': '#58a6ff'}},
-                    gauge = {'axis': {'range': [0, df['Tổng Điểm Tiêu Diệt'].max()*1.2]}, 'bar': {'color': "#58a6ff"}}
-                ))
+                fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['Tổng Điểm Tiêu Diệt'], title={'text': "TIẾN ĐỘ TIÊU DIỆT"}, gauge={'axis':{'range':[0, df['Tổng Điểm Tiêu Diệt'].max()*1.1]},'bar':{'color':"#58a6ff"}}))
                 st.plotly_chart(fig_k, use_container_width=True)
-            
             with ck2:
-                fig_d = go.Figure(go.Indicator(
-                    mode = "gauge+number", value = d['DEAD_POWER_SCORE'],
-                    title = {'text': "TIẾN ĐỘ TỬ VONG (POWER)", 'font': {'color': '#ff4b4b'}},
-                    gauge = {'axis': {'range': [0, df['DEAD_POWER_SCORE'].max()*1.2]}, 'bar': {'color': "#ff4b4b"}}
-                ))
+                fig_d = go.Figure(go.Indicator(mode="gauge+number", value=d['DEAD_POWER_SCORE'], title={'text': "TIẾN ĐỘ DEAD POW"}, gauge={'axis':{'range':[0, df['DEAD_POWER_SCORE'].max()*1.1]},'bar':{'color':"#ff4b4b"}}))
                 st.plotly_chart(fig_d, use_container_width=True)
 
     with tab2:
         st.subheader("🏆 BẢNG XẾP HẠNG CHIẾN DỊCH")
-        # Bảng hiển thị có cột KPI Tổng ở cuối cùng
         view_df = df[['RANK', 'ID nhân vật', 'Tên Người Dùng', 'Sức Mạnh', 'Tổng Điểm Tiêu Diệt', 'DEAD_POWER_SCORE', 'Tài Nguyên Thu Thập', 'TOTAL_KPI']]
-        
-        # Định dạng hiển thị
-        st.dataframe(
-            view_df.style.format({
-                'Sức Mạnh': '{:,.0f}',
-                'Tổng Điểm Tiêu Diệt': '{:,.0f}',
-                'DEAD_POWER_SCORE': '{:,.0f}',
-                'Tài Nguyên Thu Thập': '{:,.0f}',
-                'TOTAL_KPI': '{:,.0f}'
-            }),
-            use_container_width=True, height=600
-        )
+        st.dataframe(view_df.style.format({'Sức Mạnh':'{:,.0f}','Tổng Điểm Tiêu Diệt':'{:,.0f}','DEAD_POWER_SCORE':'{:,.0f}','Tài Nguyên Thu Thập':'{:,.0f}','TOTAL_KPI':'{:,.0f}'}), use_container_width=True, height=600)
