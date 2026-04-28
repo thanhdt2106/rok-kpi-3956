@@ -45,25 +45,40 @@ TEXTS = {
 
 # --- 4. CÁC HÀM XỬ LÝ (CALLBACKS) ---
 def change_lang_callback():
-    # Cập nhật ngôn ngữ ngay lập tức khi nhấn radio
     st.session_state.lang = st.session_state.lang_radio_key
 
 def sync_search_callback():
-    # Lưu vị trí index để không bị mất tên khi đổi qua lại VN/EN
     if 'main_search' in st.session_state:
         try:
             st.session_state.selected_index = options_list.index(st.session_state.main_search)
         except ValueError:
             st.session_state.selected_index = 0
 
-# Lấy từ điển ngôn ngữ hiện tại
 L = TEXTS[st.session_state.lang]
 
-# --- 5. CSS CUSTOM ---
+# --- 5. CSS CUSTOM (FIX LỖI MOBILE SEARCH) ---
 st.markdown(f"""
     <style>
     header[data-testid="stHeader"] {{display: none !important;}}
     .stApp {{ background-color: #0d1117; color: #c9d1d9; }}
+    
+    /* Giữ thanh tìm kiếm và nút ngôn ngữ cố định khi cuộn hoặc hiện bàn phím */
+    .search-container {{
+        position: sticky;
+        top: 0px;
+        z-index: 1000;
+        background-color: #0d1117;
+        padding: 10px 0px;
+        border-bottom: 1px solid #30363d;
+    }}
+
+    /* Ngăn chặn layout bị đẩy lên khi hiện bàn phím điện thoại */
+    @media screen and (max-width: 768px) {{
+        [data-testid="stVerticalBlock"] {{
+            gap: 0rem !important;
+        }}
+    }}
+
     .main-header {{ 
         background: linear-gradient(90deg, #00FFFF, #58a6ff); 
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
@@ -103,26 +118,29 @@ if res:
     # --- GIAO DIỆN CHÍNH ---
     st.markdown(f'<div class="main-header">{L["header"]}</div>', unsafe_allow_html=True)
     
-    col_lang, col_search = st.columns([1, 4])
-    with col_lang:
-        # Sử dụng callback để đổi ngôn ngữ ngay lập tức (1 lần bấm)
-        st.radio("L", ["VN", "EN"], 
-                 index=0 if st.session_state.lang == "VN" else 1, 
-                 key="lang_radio_key", 
-                 on_change=change_lang_callback,
-                 horizontal=True, label_visibility="collapsed")
-    
-    with col_search:
-        # Ô search gõ hiện gợi ý ngay, không mất dữ liệu khi đổi EN/VN
-        choice = st.selectbox(
-            "Search",
-            options=options_list,
-            index=st.session_state.selected_index,
-            placeholder=L["placeholder"],
-            label_visibility="collapsed",
-            key="main_search",
-            on_change=sync_search_callback
-        )
+    # Bao bọc phần Search vào 1 container để áp dụng Sticky CSS
+    search_area = st.container()
+    with search_area:
+        st.markdown('<div class="search-container">', unsafe_allow_html=True)
+        col_lang, col_search = st.columns([1, 4])
+        with col_lang:
+            st.radio("L", ["VN", "EN"], 
+                     index=0 if st.session_state.lang == "VN" else 1, 
+                     key="lang_radio_key", 
+                     on_change=change_lang_callback,
+                     horizontal=True, label_visibility="collapsed")
+        
+        with col_search:
+            choice = st.selectbox(
+                "Search",
+                options=options_list,
+                index=st.session_state.selected_index,
+                placeholder=L["placeholder"],
+                label_visibility="collapsed",
+                key="main_search",
+                on_change=sync_search_callback
+            )
+        st.markdown('</div>', unsafe_allow_html=True)
 
     tab1, tab2 = st.tabs([L["tab1"], L["tab2"]])
     
@@ -147,7 +165,6 @@ if res:
                 c_cols[3].markdown(f'<div class="info-box"><div class="info-label">Total Kill</div><div class="info-value">{int(d[c_kill]):,}</div></div>', unsafe_allow_html=True)
                 c_cols[4].markdown(f'<div class="info-box"><div class="info-label">Total Dead</div><div class="info-value">{int(d["SUM_DEAD"]):,}</div></div>', unsafe_allow_html=True)
                 
-                # Chi tiết Kill/Dead
                 st.write("---")
                 k_cols = st.columns(4)
                 for i, t in enumerate(['T5', 'T4', 'T3', 'T2']):
