@@ -112,10 +112,10 @@ if res:
                 c5.markdown(f'<div class="info-box"><div class="info-label">Tổng Tử</div><div class="info-value">{int(d["SUM_DEAD"]):,}</div></div>', unsafe_allow_html=True)
                 
                 st.markdown("**⚔️ CHI TIẾT TIÊU DIỆT (KILL)**")
-                k1, k2, k3, k4, k5 = st.columns(5)
-                for i, t in enumerate(['T5', 'T4', 'T3', 'T2', 'T1']):
+                k1, k2, k3, k4, = st.columns(4)
+                for i, t in enumerate(['T5', 'T4', 'T3', 'T2',]):
                     val = d[f'Tổng Tiêu Diệt {t}']
-                    [k1, k2, k3, k4, k5][i].markdown(f'<div class="info-box"><div class="info-label">{t} Kill</div><div class="info-value">{int(val):,}</div></div>', unsafe_allow_html=True)
+                    [k1, k2, k3, k4 ][i].markdown(f'<div class="info-box"><div class="info-label">{t} Kill</div><div class="info-value">{int(val):,}</div></div>', unsafe_allow_html=True)
 
                 st.markdown("**💀 CHI TIẾT TỬ VONG (DEAD)**")
                 d_cols = st.columns(5)
