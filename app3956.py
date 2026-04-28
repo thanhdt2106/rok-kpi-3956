@@ -103,20 +103,31 @@ if res:
                  key="lang_radio_key", on_change=change_lang_callback,
                  horizontal=True, label_visibility="collapsed")
     
-    with col_search:
-        # TÍNH NĂNG CHỈ HIỆN GỢI Ý KHI GÕ
-        search_input = st.session_state.get("main_search", "")
-        if search_input and search_input != "":
-            filtered_options = [opt for opt in options_list if search_input.lower() in opt.lower()]
-            # Luôn giữ lại giá trị đang chọn nếu nó hợp lệ
-            if search_input in options_list and search_input not in filtered_options:
-                filtered_options.insert(0, search_input)
+   with col_search:
+        # 1. Tạo danh sách gợi ý (luôn đầy đủ để Streamlit có thể lọc khi gõ)
+        # Thêm một khoảng trắng ở đầu để làm giá trị mặc định
+        search_options = [""] + options_list
+        
+        # 2. CSS để ẩn danh sách menu xổ xuống khi chưa gõ gì
+        # Nếu giá trị là "" (trống), menu sẽ bị ẩn đi bằng CSS
+        current_val = st.session_state.get("main_search", "")
+        if current_val == "" or current_val is None:
+            st.markdown("""
+                <style>
+                    div[data-baseweb="popover"] { display: none; }
+                </style>
+            """, unsafe_allow_html=True)
         else:
-            filtered_options = [""]
+            st.markdown("""
+                <style>
+                    div[data-baseweb="popover"] { display: block; }
+                </style>
+            """, unsafe_allow_html=True)
 
+        # 3. Widget Selectbox
         choice = st.selectbox(
             "Search",
-            options=list(dict.fromkeys(filtered_options)), # Xóa trùng nếu có
+            options=search_options,
             index=0,
             placeholder=L["placeholder"],
             label_visibility="collapsed",
