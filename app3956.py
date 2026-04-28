@@ -5,18 +5,18 @@ import plotly.graph_objects as go
 # --- 1. CẤU HÌNH TRANG ---
 st.set_page_config(page_title="FTD KPI SYSTEM", layout="wide", initial_sidebar_state="collapsed")
 
-# --- 2. KHỞI TẠO SESSION STATE (CHỐNG RESET) ---
+# --- 2. KHỞI TẠO SESSION STATE (BẮT BUỘC ĐỂ CHỐNG RESET) ---
 if 'lang' not in st.session_state:
     st.session_state.lang = "VN"
-if 'search_query' not in st.session_state:
-    st.session_state.search_query = ""
+if 'selected_index' not in st.session_state:
+    st.session_state.selected_index = 0 # Lưu vị trí đã chọn trong danh sách
 
 # --- 3. DỮ LIỆU PHIÊN DỊCH ---
 TEXTS = {
     "VN": {
         "header": "HỆ THỐNG KPI - SHARED HOUSE 3956",
         "tab1": "👤 HỒ SƠ CHI TIẾT", "tab2": "📊 TỔNG QUAN QUÂN ĐOÀN",
-        "placeholder": "🔍 Gõ ID hoặc tên để tìm kiếm ngay...",
+        "placeholder": "🔍 Gõ để tìm kiếm (tự động gợi ý)...",
         "rank": "🏆 HẠNG", "power_now": "🛡️ SỨC MẠNH", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT", 
         "target_kill": "ĐẠT: ", "target_dead": "ĐẠT: ",
@@ -30,7 +30,7 @@ TEXTS = {
     "EN": {
         "header": "KPI SYSTEM - SHARED HOUSE 3956",
         "tab1": "👤 DETAILED PROFILE", "tab2": "📊 ALLIANCE OVERVIEW",
-        "placeholder": "🔍 Type ID or Name to search now...",
+        "placeholder": "🔍 Type to search (auto-suggest)...",
         "rank": "🏆 RANK", "power_now": "🛡️ POWER", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 VIEW FULL STATISTICS", 
         "target_kill": "REACHED: ", "target_dead": "REACHED: ",
@@ -43,9 +43,14 @@ TEXTS = {
     }
 }
 
+# Hàm xử lý khi người dùng chọn tên
+def sync_search():
+    # Lưu lại vị trí index của người vừa chọn để khi đổi ngôn ngữ nó không nhảy về 0
+    st.session_state.selected_index = options_list.index(st.session_state.main_search)
+
 L = TEXTS[st.session_state.lang]
 
-# --- 4. CSS CUSTOM (HIỆU ỨNG KÍNH LÚP & SEARCH ĐỘNG) ---
+# --- 4. CSS CUSTOM ---
 st.markdown(f"""
     <style>
     header[data-testid="stHeader"] {{display: none !important;}}
@@ -55,19 +60,10 @@ st.markdown(f"""
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
         text-align: center; font-size: clamp(22px, 5vw, 32px); font-weight: 900; padding-bottom: 15px;
     }}
-    
-    /* Custom Selectbox thành thanh Search giống Google */
-    div[data-testid="stSelectbox"] div[data-baseweb="select"] {{
-        background-color: #1c2128;
-        border: 1px solid #30363d;
-        border-radius: 8px;
-    }}
-    
     .info-box {{ background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; min-height: 70px; }}
     .info-label {{ color: #8b949e; font-size: 11px; font-weight: bold; text-transform: uppercase; }}
     .info-value {{ color: #ffffff; font-size: 16px; font-weight: 800; }}
     .gauge-footer {{ color: #58a6ff; font-size: 13px; font-weight: 800; text-align: center; margin-top: -35px; }}
-    
     @media (max-width: 768px) {{
         [data-testid="column"] {{ width: 50% !important; flex: 1 1 50% !important; min-width: 50% !important; }}
     }}
@@ -96,24 +92,27 @@ def load_data():
 res = load_data()
 if res:
     df, c_id, c_name, c_pow, c_kill = res
+    options_list = [""] + df['Full_Search'].tolist()
+    
     st.markdown(f'<div class="main-header">{L["header"]}</div>', unsafe_allow_html=True)
     
     col_lang, col_search = st.columns([1, 4])
     with col_lang:
-        new_lang = st.radio("L", ["VN", "EN"], index=0 if st.session_state.lang == "VN" else 1, horizontal=True, label_visibility="collapsed")
-        if new_lang != st.session_state.lang:
-            st.session_state.lang = new_lang
-            st.rerun()
+        # Khi chọn ngôn ngữ, st.session_state.lang thay đổi và script chạy lại
+        st.session_state.lang = st.radio("L", ["VN", "EN"], 
+                                         index=0 if st.session_state.lang == "VN" else 1, 
+                                         horizontal=True, label_visibility="collapsed")
     
     with col_search:
-        # Sử dụng Selectbox làm Search bar - Gõ phím là nó tự lọc danh sách gợi ý ngay lập tức
+        # QUAN TRỌNG: index=st.session_state.selected_index giúp giữ tên đã chọn khi đổi ngôn ngữ
         choice = st.selectbox(
             "Search",
-            options=[""] + df['Full_Search'].tolist(),
-            index=0,
+            options=options_list,
+            index=st.session_state.selected_index,
             placeholder=L["placeholder"],
             label_visibility="collapsed",
-            key="main_search"
+            key="main_search",
+            on_change=sync_search
         )
 
     tab1, tab2 = st.tabs([L["tab1"], L["tab2"]])
@@ -122,22 +121,22 @@ if res:
         if choice != "":
             d = df[df['Full_Search'] == choice].iloc[0]
             
-            # --- PROFILE ---
+            # --- 4 HỘP CHỈ SỐ ---
             m1, m2, m3, m4 = st.columns(4)
             m1.markdown(f'<div class="info-box"><div class="info-label">{L["rank"]}</div><div class="info-value" style="color:#FFD700;">#{int(d["H_RAW"])}</div></div>', unsafe_allow_html=True)
             m2.markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>', unsafe_allow_html=True)
             m3.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
             m4.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
             
-            # --- CHI TIẾT (ĐÓNG SẴN) ---
+            # --- CHI TIẾT (LUÔN ĐÓNG KHI LOAD) ---
             with st.expander(L["detail_title"], expanded=False):
                 st.markdown(f"**{L['general_stats']}**")
-                c1, c2, c3, c4, c5 = st.columns(5)
-                c1.markdown(f'<div class="info-box"><div class="info-label">ID</div><div class="info-value">{d[c_id]}</div></div>', unsafe_allow_html=True)
-                c2.markdown(f'<div class="info-box"><div class="info-label">{L["name_label"]}</div><div class="info-value">{d[c_name]}</div></div>', unsafe_allow_html=True)
-                c3.markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>', unsafe_allow_html=True)
-                c4.markdown(f'<div class="info-box"><div class="info-label">Total Kill</div><div class="info-value">{int(d[c_kill]):,}</div></div>', unsafe_allow_html=True)
-                c5.markdown(f'<div class="info-box"><div class="info-label">Total Dead</div><div class="info-value">{int(d["SUM_DEAD"]):,}</div></div>', unsafe_allow_html=True)
+                c_cols = st.columns(5)
+                c_cols[0].markdown(f'<div class="info-box"><div class="info-label">ID</div><div class="info-value">{d[c_id]}</div></div>', unsafe_allow_html=True)
+                c_cols[1].markdown(f'<div class="info-box"><div class="info-label">{L["name_label"]}</div><div class="info-value">{d[c_name]}</div></div>', unsafe_allow_html=True)
+                c_cols[2].markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>', unsafe_allow_html=True)
+                c_cols[3].markdown(f'<div class="info-box"><div class="info-label">Total Kill</div><div class="info-value">{int(d[c_kill]):,}</div></div>', unsafe_allow_html=True)
+                c_cols[4].markdown(f'<div class="info-box"><div class="info-label">Total Dead</div><div class="info-value">{int(d["SUM_DEAD"]):,}</div></div>', unsafe_allow_html=True)
                 
                 st.markdown(f"**{L['kill_stats']}**")
                 k_cols = st.columns(4)
@@ -162,7 +161,6 @@ if res:
                 st.plotly_chart(fig_d, use_container_width=True, config={'displayModeBar': False})
                 st.markdown(f'<div class="gauge-footer">{L["target_dead"]}{int(d["SUM_DEAD"]/1000)}K / 400K</div>', unsafe_allow_html=True)
         else:
-            # Hiện banner khi chưa chọn ai
             st.image("https://github.com/thanhdt2106/rok-kpi-3956/blob/main/meme1.png?raw=true", use_column_width=True)
 
     with tab2:
