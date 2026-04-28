@@ -33,9 +33,7 @@ URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=
 @st.cache_data(ttl=30)
 def load_data():
     try:
-        df = pd.read_csv(URL)
-        # Làm sạch tên cột (xóa khoảng trắng và dấu xuống dòng)
-        df.columns = [str(c).replace('\n', ' ').strip() for c in df.columns]
+     
         
         # Tự động dò tìm các cột quan trọng dựa trên ảnh thực tế
         col_name = 'Tên Người Dùng'
