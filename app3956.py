@@ -7,6 +7,11 @@ st.set_page_config(page_title="FTD KPI SYSTEM", layout="wide")
 
 # --- 2. GIAO DIỆN CSS TỐI ƯU ---
 st.markdown("""
+/* Ẩn Sidebar gốc */
+    [data-testid="stSidebar"] {display: none;}
+    [data-testid="stHeader"] {background: rgba(0,0,0,0);}
+    
+    .stApp { background-color: #0d1117; color: #c9d1d9; }
     <style>
     .stApp { background-color: #0d1117; color: #c9d1d9; }
     .main-header { color: #00FFFF; text-align: center; font-size: 30px; font-weight: bold; padding: 10px; border-bottom: 2px solid #58a6ff; margin-bottom: 20px; }
@@ -17,11 +22,8 @@ st.markdown("""
     .achievement-100 { color: #ff0000; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
-# --- 3. ẨN sidebar ---
-    [data-testid="stSidebar"] {display: none;}
-    [data-testid="stHeader"] {background: rgba(0,0,0,0);}
+
     
-    .stApp { background-color: #0d1117; color: #c9d1d9; }
 # --- 3. LOGIC MỐC KPI ---
 def get_targets(pow_val):
     p_mil = pow_val / 1_000_000
