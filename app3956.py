@@ -113,12 +113,12 @@ if res:
                 
                 # Dòng 2: Chi tiết Kill T5 -> T1
                 st.markdown("**⚔️ CHI TIẾT TIÊU DIỆT (KILL)**")
-                k1, k2, k3, k4, k5 = st.columns(5)
+                k1, k2, k3, k4,  = st.columns(4)
                 k1.markdown(f'<div class="info-box"><div class="info-label">T5 Kill</div><div class="info-value">{int(d["Tổng Tiêu Diệt T5"]):,}</div></div>', unsafe_allow_html=True)
                 k2.markdown(f'<div class="info-box"><div class="info-label">T4 Kill</div><div class="info-value">{int(d["Tổng Tiêu Diệt T4"]):,}</div></div>', unsafe_allow_html=True)
                 k3.markdown(f'<div class="info-box"><div class="info-label">T3 Kill</div><div class="info-value">{int(d["Tổng Tiêu Diệt T3"]):,}</div></div>', unsafe_allow_html=True)
                 k4.markdown(f'<div class="info-box"><div class="info-label">T2 Kill</div><div class="info-value">{int(d["Tổng Tiêu Diệt T2"]):,}</div></div>', unsafe_allow_html=True)
-                k5.markdown(f'<div class="info-box"><div class="info-label">T1 Kill</div><div class="info-value">{int(d["Tổng Tiêu Diệt T1"]):,}</div></div>', unsafe_allow_html=True)
+                
 
                 # Dòng 3: Chi tiết Tử vong T5 -> T1
                 st.markdown("**💀 CHI TIẾT TỬ VONG (DEAD)**")
@@ -127,7 +127,6 @@ if res:
                 d2.markdown(f'<div class="info-box"><div class="info-label">T4 Tử</div><div class="info-value">{int(d["T4 tử vong"]):,}</div></div>', unsafe_allow_html=True)
                 d3.markdown(f'<div class="info-box"><div class="info-label">T3 Tử</div><div class="info-value">{int(d["T3 tử vong"]):,}</div></div>', unsafe_allow_html=True)
                 d4.markdown(f'<div class="info-box"><div class="info-label">T2 Tử</div><div class="info-value">{int(d["T2 tử vong"]):,}</div></div>', unsafe_allow_html=True)
-                d5.markdown(f'<div class="info-box"><div class="info-label">T1 Tử</div><div class="info-value">{int(d["T1 tử vong"]):,}</div></div>', unsafe_allow_html=True)
 
             # --- 2 VÒNG TRÒN KPI ---
             g1, g2 = st.columns(2)
