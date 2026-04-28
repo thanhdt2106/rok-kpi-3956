@@ -50,7 +50,7 @@ L = texts[lang]
 # --- 4. XỬ LÝ DỮ LIỆU ---
 SHEET_ID = '1MJQSE3siwFWmQNdJmbbJ6RsilvcoxWTu-r6h-UdHugE'
 # Gid 371969335 là sheet chứa dữ liệu hiện tại (theo ảnh)
-URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=371969335'
+URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=351056493'
 
 @st.cache_data(ttl=60)
 def load_data():
