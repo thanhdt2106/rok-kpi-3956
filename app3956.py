@@ -11,64 +11,65 @@ if 'lang' not in st.session_state:
 if 'selected_index' not in st.session_state:
     st.session_state.selected_index = 0
 
-# --- 3. DỮ LIỆU PHIÊN DỊCH ---
+# --- 3. DỮ LIỆU PHIÊN DỊCH TOÀN DIỆN ---
 TEXTS = {
     "VN": {
-        "header": "HỆ THỐNG KPI - 3956",
-        "tab1": "👤 CHI TIẾT", "tab2": "📊 TỔNG QUAN",
-        "placeholder": "🔍 Tìm tên hoặc ID...",
+        "header": "HỆ THỐNG KPI - SHARED HOUSE 3956",
+        "tab1": "👤 HỒ SƠ CHI TIẾT", "tab2": "📊 TỔNG QUAN QUÂN ĐOÀN",
+        "placeholder": "🔍 Gõ để tìm kiếm (tự động gợi ý)...",
         "rank": "🏆 HẠNG", "power_now": "🛡️ SỨC MẠNH", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT", 
         "target_kill": "ĐẠT: ", "target_dead": "ĐẠT: ",
-        "general_stats": "📊 TỔNG QUÁT", "kill_stats": "⚔️ KILL", "dead_stats": "💀 DEAD", "rss_stats": "🌾 THU NHẬP",
-        "id_label": "ID", "name_label": "Tên"
+        "general_stats": "📊 THÔNG SỐ TỔNG QUÁT",
+        "kill_stats": "⚔️ CHI TIẾT TIÊU DIỆT (KILL)",
+        "dead_stats": "💀 CHI TIẾT TỬ VONG (DEAD)",
+        "col_rank": "HẠNG 🏆", "col_name": "CHIẾN BINH 🥷", "col_power": "SỨC MẠNH 🛡️",
+        "col_kill": "ĐIỂM KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "LÍNH CHẾT 💀", "col_kpi_dead": "KPI DEAD ⚰️",
+        "id_label": "ID nhân vật", "name_label": "Tên Người Dùng"
     },
     "EN": {
-        "header": "KPI SYSTEM - 3956",
-        "tab1": "👤 PROFILE", "tab2": "📊 OVERVIEW",
-        "placeholder": "🔍 Search Name or ID...",
+        "header": "KPI SYSTEM - SHARED HOUSE 3956",
+        "tab1": "👤 DETAILED PROFILE", "tab2": "📊 ALLIANCE OVERVIEW",
+        "placeholder": "🔍 Type to search (auto-suggest)...",
         "rank": "🏆 RANK", "power_now": "🛡️ POWER", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
-        "detail_title": "📌 FULL STATISTICS", 
+        "detail_title": "📌 VIEW FULL STATISTICS", 
         "target_kill": "REACHED: ", "target_dead": "REACHED: ",
-        "general_stats": "📊 GENERAL", "kill_stats": "⚔️ KILL", "dead_stats": "💀 DEAD", "rss_stats": "🌾 GATHERED",
-        "id_label": "ID", "name_label": "Name"
+        "general_stats": "📊 GENERAL STATISTICS",
+        "kill_stats": "⚔️ KILL DETAILS",
+        "dead_stats": "💀 DEAD DETAILS",
+        "col_rank": "RANK 🏆", "col_name": "COMMANDER 🥷", "col_power": "POWER 🛡️",
+        "col_kill": "KILL POINTS ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "DEAD UNITS 💀", "col_kpi_dead": "KPI DEAD ⚰️",
+        "id_label": "Character ID", "name_label": "Username"
     }
 }
 
-# --- 4. CALLBACKS ---
+# --- 4. CÁC HÀM XỬ LÝ (CALLBACKS) ---
 def change_lang_callback():
+    # Cập nhật ngôn ngữ ngay lập tức khi nhấn radio
     st.session_state.lang = st.session_state.lang_radio_key
 
 def sync_search_callback():
+    # Lưu vị trí index để không bị mất tên khi đổi qua lại VN/EN
     if 'main_search' in st.session_state:
         try:
             st.session_state.selected_index = options_list.index(st.session_state.main_search)
         except ValueError:
             st.session_state.selected_index = 0
 
+# Lấy từ điển ngôn ngữ hiện tại
 L = TEXTS[st.session_state.lang]
 
-# --- 5. CSS CUSTOM (LOẠI BỎ PHẦN XÓA KHOẢNG ĐEN GÂY LỖI) ---
+# --- 5. CSS CUSTOM ---
 st.markdown(f"""
     <style>
-   
-    
-    /* Sticky Header: Giữ thanh search luôn ở đỉnh để không bị bàn phím che */
-    [data-testid="stVerticalBlock"] > div:first-child {{
-        position: sticky;
-        top: 0;
-        z-index: 999;
-        background-color: #0d1117;
-        padding: 10px 0;
-    }}
-    
+    header[data-testid="stHeader"] {{display: none !important;}}
+    .stApp {{ background-color: #0d1117; color: #c9d1d9; }}
     .main-header {{ 
         background: linear-gradient(90deg, #00FFFF, #58a6ff); 
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
-        text-align: center; font-size: 24px; font-weight: 900; margin-bottom: 5px;
+        text-align: center; font-size: clamp(22px, 5vw, 32px); font-weight: 900; padding-bottom: 15px;
     }}
-    
-    .info-box {{ background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; }}
+    .info-box {{ background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; min-height: 70px; }}
     .info-label {{ color: #8b949e; font-size: 11px; font-weight: bold; text-transform: uppercase; }}
     .info-value {{ color: #ffffff; font-size: 16px; font-weight: 800; }}
     .gauge-footer {{ color: #58a6ff; font-size: 13px; font-weight: 800; text-align: center; margin-top: -35px; }}
@@ -82,78 +83,90 @@ def load_data():
         URL = f'https://docs.google.com/spreadsheets/d/1MJQSE3siwFWmQNdJmbbJ6RsilvcoxWTu-r6h-UdHugE/export?format=csv&gid=351056493'
         df = pd.read_csv(URL)
         df.columns = [str(c).strip() for c in df.columns]
-        c_id, c_name, c_pow, c_kill, c_rss = "ID nhân vật", "Tên Người Dùng", "Sức Mạnh", "Tổng Điểm Tiêu Diệt", "Thu thập tài nguyên"
-        
-        kill_cols = [f'Tổng Tiêu Diệt T{i}' for i in range(1, 6)]
-        dead_cols = [f'T{i} tử vong' for i in range(1, 6)]
-        
-        for col in [c_pow, c_kill, c_rss] + kill_cols + dead_cols:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-            
+        c_id, c_name, c_pow, c_kill = "ID nhân vật", "Tên Người Dùng", "Sức Mạnh", "Tổng Điểm Tiêu Diệt"
+        dead_cols = ['T5 tử vong', 'T4 tử vong', 'T3 tử vong', 'T2 tử vong', 'T1 tử vong']
+        for col in [c_pow, c_kill] + dead_cols: df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         df['SUM_DEAD'] = df[dead_cols].sum(axis=1)
         df['K_PCT'] = (df[c_kill] / 300_000_000 * 100).round(1)
         df['D_PCT'] = (df['SUM_DEAD'] / 400_000 * 100).round(1)
-        
         df = df.sort_values(by='K_PCT', ascending=False).reset_index(drop=True)
         df.insert(0, 'H_RAW', range(1, len(df) + 1))
         df['Full_Search'] = df[c_name] + " (ID: " + df[c_id].astype(str) + ")"
-        return df, c_id, c_name, c_pow, c_kill, c_rss
+        return df, c_id, c_name, c_pow, c_kill
     except: return None
 
 res = load_data()
 if res:
-    df, c_id, c_name, c_pow, c_kill, c_rss = res
+    df, c_id, c_name, c_pow, c_kill = res
     options_list = [""] + df['Full_Search'].tolist()
     
-    # --- PHẦN ĐỈNH TRANG (STICKY) ---
-    with st.container():
-        st.markdown(f'<div class="main-header">{L["header"]}</div>', unsafe_allow_html=True)
-        col_l, col_s = st.columns([1, 4])
-        with col_l:
-            st.radio("L", ["VN", "EN"], index=0 if st.session_state.lang == "VN" else 1, 
-                     key="lang_radio_key", on_change=change_lang_callback, horizontal=True, label_visibility="collapsed")
-        with col_s:
-            choice = st.selectbox("S", options=options_list, index=st.session_state.selected_index,
-                                  placeholder=L["placeholder"], label_visibility="collapsed", 
-                                  key="main_search", on_change=sync_search_callback)
+    # --- GIAO DIỆN CHÍNH ---
+    st.markdown(f'<div class="main-header">{L["header"]}</div>', unsafe_allow_html=True)
+    
+    col_lang, col_search = st.columns([1, 4])
+    with col_lang:
+        # Sử dụng callback để đổi ngôn ngữ ngay lập tức (1 lần bấm)
+        st.radio("L", ["VN", "EN"], 
+                 index=0 if st.session_state.lang == "VN" else 1, 
+                 key="lang_radio_key", 
+                 on_change=change_lang_callback,
+                 horizontal=True, label_visibility="collapsed")
+    
+    with col_search:
+        # Ô search gõ hiện gợi ý ngay, không mất dữ liệu khi đổi EN/VN
+        choice = st.selectbox(
+            "Search",
+            options=options_list,
+            index=st.session_state.selected_index,
+            placeholder=L["placeholder"],
+            label_visibility="collapsed",
+            key="main_search",
+            on_change=sync_search_callback
+        )
 
     tab1, tab2 = st.tabs([L["tab1"], L["tab2"]])
     
     with tab1:
         if choice != "":
             d = df[df['Full_Search'] == choice].iloc[0]
-            m = st.columns(4)
-            m[0].markdown(f'<div class="info-box"><div class="info-label">{L["rank"]}</div><div class="info-value" style="color:#FFD700;">#{int(d["H_RAW"])}</div></div>', unsafe_allow_html=True)
-            m[1].markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>', unsafe_allow_html=True)
-            m[2].markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
-            m[3].markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
             
-            with st.expander(L["detail_title"]):
+            # --- 4 HỘP CHỈ SỐ ---
+            m1, m2, m3, m4 = st.columns(4)
+            m1.markdown(f'<div class="info-box"><div class="info-label">{L["rank"]}</div><div class="info-value" style="color:#FFD700;">#{int(d["H_RAW"])}</div></div>', unsafe_allow_html=True)
+            m2.markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>', unsafe_allow_html=True)
+            m3.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
+            m4.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
+            
+            # --- CHI TIẾT ---
+            with st.expander(L["detail_title"], expanded=False):
                 st.markdown(f"**{L['general_stats']}**")
-                g = st.columns(3)
-                g[0].markdown(f'<div class="info-box"><div class="info-label">ID</div><div class="info-value">{d[c_id]}</div></div>', unsafe_allow_html=True)
-                g[1].markdown(f'<div class="info-box"><div class="info-label">{L["name_label"]}</div><div class="info-value">{d[c_name]}</div></div>', unsafe_allow_html=True)
-                g[2].markdown(f'<div class="info-box"><div class="info-label">{L["rss_stats"]}</div><div class="info-value">{int(d[c_rss]):,}</div></div>', unsafe_allow_html=True)
-
-                st.markdown(f"**{L['kill_stats']}**")
+                c_cols = st.columns(5)
+                c_cols[0].markdown(f'<div class="info-box"><div class="info-label">ID</div><div class="info-value">{d[c_id]}</div></div>', unsafe_allow_html=True)
+                c_cols[1].markdown(f'<div class="info-box"><div class="info-label">{L["name_label"]}</div><div class="info-value">{d[c_name]}</div></div>', unsafe_allow_html=True)
+                c_cols[2].markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>', unsafe_allow_html=True)
+                c_cols[3].markdown(f'<div class="info-box"><div class="info-label">Total Kill</div><div class="info-value">{int(d[c_kill]):,}</div></div>', unsafe_allow_html=True)
+                c_cols[4].markdown(f'<div class="info-box"><div class="info-label">Total Dead</div><div class="info-value">{int(d["SUM_DEAD"]):,}</div></div>', unsafe_allow_html=True)
+                
+                # Chi tiết Kill/Dead
+                st.write("---")
                 k_cols = st.columns(5)
-                for i in range(5, 0, -1):
-                    k_cols[5-i].markdown(f'<div class="info-box"><div class="info-label">T{i} KILL</div><div class="info-value">{int(d[f"Tổng Tiêu Diệt T{i}"]):,}</div></div>', unsafe_allow_html=True)
-
-                st.markdown(f"**{L['dead_stats']}**")
+                for i, t in enumerate(['T5', 'T4', 'T3', 'T2', 'T1']):
+                    k_cols[i].markdown(f'<div class="info-box"><div class="info-label">{t} Kill</div><div class="info-value">{int(d[f"Tổng Tiêu Diệt {t}"]):,}</div></div>', unsafe_allow_html=True)
+                
                 d_cols = st.columns(5)
-                for i in range(5, 0, -1):
-                    d_cols[5-i].markdown(f'<div class="info-box"><div class="info-label">T{i} DEAD</div><div class="info-value">{int(d[f"T{i} tử vong"]):,}</div></div>', unsafe_allow_html=True)
+                for i, t in enumerate(['T5', 'T4', 'T3', 'T2', 'T1']):
+                    d_cols[i].markdown(f'<div class="info-box"><div class="info-label">{t} Dead</div><div class="info-value">{int(d[f"{t} tử vong"]):,}</div></div>', unsafe_allow_html=True)
 
+            # --- 2 VÒNG TRÒN KPI ---
             g1, g2 = st.columns(2)
             with g1:
                 fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], number={'suffix': "%", 'font':{'size':24}}, gauge={'bar': {'color': "#00FFFF"}, 'axis': {'range': [0, 100]}}))
-                fig_k.update_layout(height=180, margin=dict(l=20,r=20,t=30,b=0), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
+                fig_k.update_layout(height=200, margin=dict(l=15,r=15,t=40,b=10), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_k, use_container_width=True, config={'displayModeBar': False})
                 st.markdown(f'<div class="gauge-footer">{L["target_kill"]}{d[c_kill]/1e6:.1f}M / 300M</div>', unsafe_allow_html=True)
             with g2:
                 fig_d = go.Figure(go.Indicator(mode="gauge+number", value=d['D_PCT'], number={'suffix': "%", 'font':{'size':24}}, gauge={'bar': {'color': "#f29b05"}, 'axis': {'range': [0, 100]}}))
-                fig_d.update_layout(height=180, margin=dict(l=20,r=20,t=30,b=0), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
+                fig_d.update_layout(height=200, margin=dict(l=15,r=15,t=40,b=10), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_d, use_container_width=True, config={'displayModeBar': False})
                 st.markdown(f'<div class="gauge-footer">{L["target_dead"]}{int(d["SUM_DEAD"]/1000)}K / 400K</div>', unsafe_allow_html=True)
         else:
@@ -161,5 +174,5 @@ if res:
 
     with tab2:
         v_df = df[['H_RAW', c_name, c_pow, c_kill, 'K_PCT', 'SUM_DEAD', 'D_PCT']].copy()
-        st.dataframe(v_df, use_container_width=True, height=500)
-        
+        v_df.columns = [L['col_rank'], L['col_name'], L['col_power'], L['col_kill'], L['col_kpi_kill'], L['col_dead'], L['col_kpi_dead']]
+        st.dataframe(v_df.style.format({L['col_power']: '{:,.0f}', L['col_kill']: '{:,.0f}', L['col_dead']: '{:,.0f}', L['col_kpi_kill']: '{:.1f}%', L['col_kpi_dead']: '{:.1f}%'}), use_container_width=True, height=600)
