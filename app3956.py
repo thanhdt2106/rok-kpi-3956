@@ -62,7 +62,6 @@ st.markdown(f"""
     .info-label {{ color: #8b949e; font-size: 11px; font-weight: bold; text-transform: uppercase; }}
     .info-value {{ color: #ffffff; font-size: 16px; font-weight: 800; }}
     .gauge-footer {{ color: #58a6ff; font-size: 13px; font-weight: 800; text-align: center; margin-top: -35px; }}
-    /* Searchbox styling */
     div[data-testid="stSearchbox"] input {{ background-color: #161b22 !important; color: white !important; border: 1px solid #30363d !important; border-radius: 8px !important; }}
     </style>
 """, unsafe_allow_html=True)
@@ -79,7 +78,6 @@ def load_data():
         kill_cols = ['Tổng Tiêu Diệt T5', 'Tổng Tiêu Diệt T4', 'Tổng Tiêu Diệt T3', 'Tổng Tiêu Diệt T2']
         dead_cols = ['T5 tử vong', 'T4 tử vong', 'T3 tử vong', 'T2 tử vong', 'T1 tử vong']
         
-        # Convert to numeric
         for col in [c_pow, c_kill] + kill_cols + dead_cols: 
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
             
@@ -101,7 +99,6 @@ if res:
     df, c_id, c_name, c_pow, c_kill, kill_cols, dead_cols = res
     options_list = df['Full_Search'].tolist()
 
-    # Hàm xử lý gợi ý (YouTube Style)
     def search_warriors(search_term: str):
         if not search_term or len(search_term) < 1: return []
         return [opt for opt in options_list if search_term.lower() in opt.lower()][:10]
@@ -109,22 +106,12 @@ if res:
     st.markdown(f'<div class="main-header">{L["header"]}</div>', unsafe_allow_html=True)
     
     col_lang, col_search = st.columns([1, 4])
-    
     with col_lang:
-        st.radio("L", ["VN", "EN"], 
-                 index=0 if st.session_state.lang == "VN" else 1, 
-                 key="lang_radio_key", on_change=change_lang_callback,
-                 horizontal=True, label_visibility="collapsed")
+        st.radio("L", ["VN", "EN"], index=0 if st.session_state.lang == "VN" else 1, 
+                 key="lang_radio_key", on_change=change_lang_callback, horizontal=True, label_visibility="collapsed")
     
     with col_search:
-        # Tích hợp Searchbox thông minh thay thế Selectbox
-        choice = st_searchbox(
-            search_warriors,
-            placeholder=L["placeholder"],
-            key="warrior_search_box",
-            label=None,
-            clear_on_submit=False,
-        )
+        choice = st_searchbox(search_warriors, placeholder=L["placeholder"], key="warrior_search_box", label=None)
 
     tab1, tab2 = st.tabs([L["tab1"], L["tab2"]])
     
@@ -132,15 +119,15 @@ if res:
         if choice:
             d = df[df['Full_Search'] == choice].iloc[0]
             
-            # --- ROW 1: QUICK STATS ---
+            # 4 CHỈ SỐ CHÍNH (LUÔN HIỆN)
             m1, m2, m3, m4 = st.columns(4)
             m1.markdown(f'<div class="info-box"><div class="info-label">{L["rank"]}</div><div class="info-value" style="color:#FFD700;">#{int(d["H_RAW"])}</div></div>', unsafe_allow_html=True)
             m2.markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>', unsafe_allow_html=True)
             m3.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
             m4.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
             
-            # --- ROW 2: DETAILED STATS (KHÔI PHỤC T2-T5 KILL VÀ T1-T5 DEAD) ---
-            with st.expander(L["detail_title"], expanded=True):
+            # CHI TIẾT (MẶC ĐỊNH ĐÓNG - expanded=False)
+            with st.expander(L["detail_title"], expanded=False):
                 st.markdown(f"**{L['general_stats']}**")
                 c_cols = st.columns(5)
                 c_cols[0].markdown(f'<div class="info-box"><div class="info-label">ID</div><div class="info-value">{d[c_id]}</div></div>', unsafe_allow_html=True)
@@ -161,7 +148,7 @@ if res:
                 for i, col in enumerate(dead_cols):
                     d_cols_ui[i].markdown(f'<div class="info-box"><div class="info-label">{col}</div><div class="info-value">{int(d[col]):,}</div></div>', unsafe_allow_html=True)
 
-            # --- ROW 3: GAUGES ---
+            # BIỂU ĐỒ KPI (LUÔN HIỆN)
             g1, g2 = st.columns(2)
             with g1:
                 fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], number={'suffix': "%", 'font':{'size':24}}, gauge={'bar': {'color': "#00FFFF"}, 'axis': {'range': [0, 100]}}))
