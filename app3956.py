@@ -5,15 +5,15 @@ import plotly.graph_objects as go
 # --- 1. CẤU HÌNH TRANG ---
 st.set_page_config(page_title="FTD KPI SYSTEM", layout="wide", initial_sidebar_state="collapsed")
 
-# --- 2. GIAO DIỆN CSS TỐI ƯU (CHỮ TO & FULL MÀN HÌNH) ---
+# --- 2. GIAO DIỆN CSS TỐI ƯU (SIÊU TO & FULL MÀN HÌNH) ---
 st.markdown("""
     <style>
     /* Ẩn Sidebar và Header dư thừa */
     [data-testid="stSidebar"] {display: none;}
     [data-testid="stHeader"] {background: rgba(0,0,0,0);}
 
-    /* Nền tối và font chữ cơ bản to hơn */
-    .stApp { background-color: #0d1117; color: #c9d1d9; font-size: 18px; }
+    /* Nền tối và font chữ cơ bản */
+    .stApp { background-color: #0d1117; color: #c9d1d9; }
     
     /* Tiêu đề chính cực đại */
     .main-header { 
@@ -35,28 +35,38 @@ st.markdown("""
         text-align: center; 
         margin-bottom: 15px; 
     }
-    .info-label { color: #8b949e; font-size: 18px; font-weight: bold; text-transform: uppercase; margin-bottom: 8px; }
-    .info-value { color: #ffffff; font-size: 28px; font-weight: bold; }
+    .info-label { color: #8b949e; font-size: 20px; font-weight: bold; text-transform: uppercase; margin-bottom: 8px; }
+    .info-value { color: #ffffff; font-size: 32px; font-weight: bold; }
     
     /* Chỉnh cỡ chữ cho Selectbox và Tabs */
-    .stSelectbox label p { font-size: 22px !important; font-weight: bold; color: #00FFFF !important; }
-    button[data-baseweb="tab"] p { font-size: 24px !important; font-weight: bold !important; }
+    .stSelectbox label p { font-size: 24px !important; font-weight: bold; color: #00FFFF !important; }
+    button[data-baseweb="tab"] p { font-size: 28px !important; font-weight: bold !important; }
+
+    /* --- PHẦN BẢNG DỮ LIỆU SIÊU TO --- */
+    /* Phóng to font chữ trong các ô của bảng */
+    [data-testid="stDataFrame"] td {
+        font-size: 24px !important;
+        height: 70px !important; /* Tăng độ cao dòng */
+    }
+    
+    /* Phóng to font chữ tiêu đề bảng */
+    [data-testid="stDataFrame"] th {
+        font-size: 26px !important;
+        color: #00FFFF !important;
+        height: 80px !important;
+        background-color: #161b22 !important;
+    }
 
     /* Footer mục tiêu dưới biểu đồ */
     .target-footer { 
         color: #58a6ff; 
-        font-size: 24px; 
+        font-size: 26px; 
         font-weight: bold; 
         text-align: center; 
         margin-top: -15px; 
         padding: 15px;
         background: rgba(88, 166, 255, 0.1);
         border-radius: 10px;
-    }
-
-    /* Ép bảng dữ liệu hiển thị chữ to hơn */
-    [data-testid="stDataFrame"] td, [data-testid="stDataFrame"] th {
-        font-size: 20px !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -124,7 +134,6 @@ if res:
         if sel:
             d = df[df[c_name] == sel].iloc[0]
             
-            # --- CÁC CHỈ SỐ CHÍNH (TO RÕ) ---
             st.write("<br>", unsafe_allow_html=True)
             m1, m2, m3, m4 = st.columns(4)
             with m1: st.markdown(f'<div class="info-box"><div class="info-label">🏆 Thứ Hạng</div><div class="info-value" style="color:#f29b05; font-size:45px;">#{int(d["HẠNG"])}</div></div>', unsafe_allow_html=True)
@@ -138,15 +147,14 @@ if res:
                 for i, col in enumerate(all_cols):
                     with cols[i % 4]:
                         val = f"{int(d[col]):,}" if isinstance(d[col], (int, float)) else d[col]
-                        st.markdown(f'<div class="info-box"><div class="info-label">{col}</div><div class="info-value" style="font-size:18px;">{val}</div></div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="info-box"><div class="info-label">{col}</div><div class="info-value" style="font-size:20px;">{val}</div></div>', unsafe_allow_html=True)
 
-            # --- BIỂU ĐỒ GAUGE LỚN ---
             st.write("---")
             k1, k2 = st.columns(2)
             with k1:
                 fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], 
                                               number={'suffix': "%", 'font': {'size': 80}},
-                                              title={'text': "KPI TIÊU DIỆT", 'font': {'size': 30, 'color': '#00FFFF'}},
+                                              title={'text': "KPI TIÊU DIỆT", 'font': {'size': 35, 'color': '#00FFFF'}},
                                               gauge={'axis': {'range': [0, 100], 'tickfont': {'size': 20}}, 'bar': {'color': "#00FFFF"}}))
                 fig_k.update_layout(height=450, margin=dict(t=80, b=0), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_k, use_container_width=True)
@@ -155,37 +163,36 @@ if res:
             with k2:
                 fig_d = go.Figure(go.Indicator(mode="gauge+number", value=d['D_PCT'], 
                                               number={'suffix': "%", 'font': {'size': 80}},
-                                              title={'text': "KPI TỬ VONG", 'font': {'size': 30, 'color': '#f29b05'}},
+                                              title={'text': "KPI TỬ VONG", 'font': {'size': 35, 'color': '#f29b05'}},
                                               gauge={'axis': {'range': [0, 100], 'tickfont': {'size': 20}}, 'bar': {'color': "#f29b05"}}))
                 fig_d.update_layout(height=450, margin=dict(t=80, b=0), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_d, use_container_width=True)
                 st.markdown(f'<div class="target-footer">MỤC TIÊU: {int(d["T_DEAD"]):,} DEAD</div>', unsafe_allow_html=True)
 
     with tab2:
-        st.markdown("<h2 style='text-align: center; color: #00FFFF;'>BẢNG THỐNG KÊ CHI TIẾT QUÂN ĐOÀN</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; color: #00FFFF; font-size: 40px;'>BẢNG THỐNG KÊ CHI TIẾT TOÀN QUÂN</h2>", unsafe_allow_html=True)
         
-        # Đổi tên tiêu đề cột rõ ràng
         view_df = df[['HẠNG', c_name, c_kyluc, c_kill, 'K_PCT', 'SUM_DEAD_UNITS', 'D_PCT']].copy()
         view_df.columns = [
             'HẠNG', 
             'TÊN CHIẾN BINH', 
-            'KỶ LỤC SỨC MẠNH', 
-            'TỔNG ĐIỂM TIÊU DIỆT', 
-            '% HOÀN THÀNH KILL', 
-            'TỔNG ĐƠN VỊ TỬ VONG', 
-            '% HOÀN THÀNH DEAD'
+            'KỶ LỤC POW', 
+            'ĐIỂM KILL', 
+            '% KILL', 
+            'LÍNH CHẾT', 
+            '% DEAD'
         ]
         
         st.dataframe(
             view_df.style.format({
-                'KỶ LỤC SỨC MẠNH': '{:,.0f}', 
-                'TỔNG ĐIỂM TIÊU DIỆT': '{:,.0f}', 
-                '% HOÀN THÀNH KILL': '{:.1f}%', 
-                'TỔNG ĐƠN VỊ TỬ VONG': '{:,.0f}', 
-                '% HOÀN THÀNH DEAD': '{:.1f}%'
+                'KỶ LỤC POW': '{:,.0f}', 
+                'ĐIỂM KILL': '{:,.0f}', 
+                '% KILL': '{:.1f}%', 
+                'LÍNH CHẾT': '{:,.0f}', 
+                '% DEAD': '{:.1f}%'
             }), 
             use_container_width=True, 
-            height=800
+            height=900
         )
 
     with tab3:
