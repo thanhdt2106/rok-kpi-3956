@@ -100,43 +100,41 @@ if res:
     df, c_id, c_name, c_pow, c_kill = res
     options_list = [""] + df['Full_Search'].tolist()
     
-    # --- GIAO DIỆN CHÍNH ---
+  # --- 7. GIAO DIỆN CHÍNH (Đảm bảo đoạn này thụt đầu dòng đúng cấp với phần trên) ---
     st.markdown(f'<div class="main-header">{L["header"]}</div>', unsafe_allow_html=True)
     
     col_lang, col_search = st.columns([1, 4])
+    
     with col_lang:
-        # Sử dụng callback để đổi ngôn ngữ ngay lập tức (1 lần bấm)
         st.radio("L", ["VN", "EN"], 
                  index=0 if st.session_state.lang == "VN" else 1, 
                  key="lang_radio_key", 
                  on_change=change_lang_callback,
                  horizontal=True, label_visibility="collapsed")
     
-  with col_search:
-    # 1. Kiểm tra xem người dùng đã nhập gì chưa thông qua session state của widget
-    # Lưu ý: 'main_search' là key của selectbox
-    current_search_term = st.session_state.get("main_search", "")
-    
-    # 2. Nếu chưa gõ gì (chuỗi rỗng), chỉ hiện danh sách trắng hoặc mục mặc định
-    # Nếu đã gõ, lọc danh sách dựa trên từ khóa
-    if current_search_term == "" or current_search_term == None:
-        filtered_options = [""] # Không hiện gì cả
-    else:
-        # Hiện các gợi ý khớp với từ khóa người dùng đang gõ
-        filtered_options = [opt for opt in options_list if current_search_term.lower() in opt.lower()]
-        if not filtered_options:
+    with col_search:
+        # Lấy giá trị đang gõ từ session_state (nếu có)
+        search_term = st.session_state.get("main_search", "")
+        
+        # Lọc danh sách: Chỉ hiện khi search_term có độ dài > 0
+        if search_term:
+            filtered_options = [opt for opt in options_list if search_term.lower() in opt.lower()]
+            # Nếu không tìm thấy kết quả nào thì hiện danh sách trống
+            if not filtered_options:
+                filtered_options = [""]
+        else:
+            # Nếu chưa gõ gì, danh sách chỉ có 1 lựa chọn rỗng để không xổ menu
             filtered_options = [""]
 
-    # 3. Hiển thị Selectbox
-    choice = st.selectbox(
-        "Search",
-        options=filtered_options,
-        index=0,
-        placeholder=L["placeholder"],
-        label_visibility="collapsed",
-        key="main_search",
-        on_change=sync_search_callback
-    )
+        choice = st.selectbox(
+            "Search",
+            options=filtered_options,
+            index=0,
+            placeholder=L["placeholder"],
+            label_visibility="collapsed",
+            key="main_search",
+            on_change=sync_search_callback
+        )
     
     with tab1:
         if choice != "":
