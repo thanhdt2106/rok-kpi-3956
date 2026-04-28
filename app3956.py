@@ -18,9 +18,9 @@ TEXTS = {
         "tab1": "👤 CHI TIẾT", "tab2": "📊 TỔNG QUAN",
         "placeholder": "🔍 Tìm tên hoặc ID...",
         "rank": "🏆 HẠNG", "power_now": "🛡️ SỨC MẠNH", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
-        "detail_title": "📌 THÔNG SỐ CHI TIẾT", 
+        "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT", 
         "target_kill": "ĐẠT: ", "target_dead": "ĐẠT: ",
-        "general_stats": "📊 TỔNG QUÁT", "kill_stats": "⚔️ KILL", "dead_stats": "💀 DEAD", "rss_stats": "🌾 THU THẬP",
+        "general_stats": "📊 TỔNG QUÁT", "kill_stats": "⚔️ KILL", "dead_stats": "💀 DEAD", "rss_stats": "🌾 THU NHẬP",
         "id_label": "ID", "name_label": "Tên"
     },
     "EN": {
@@ -35,54 +35,56 @@ TEXTS = {
     }
 }
 
-def change_lang():
-    st.session_state.lang = st.session_state.lang_radio
+# --- 4. CALLBACKS ---
+def change_lang_callback():
+    st.session_state.lang = st.session_state.lang_radio_key
 
-def sync_search():
+def sync_search_callback():
     if 'main_search' in st.session_state:
-        try: st.session_state.selected_index = options_list.index(st.session_state.main_search)
-        except: st.session_state.selected_index = 0
+        try:
+            st.session_state.selected_index = options_list.index(st.session_state.main_search)
+        except ValueError:
+            st.session_state.selected_index = 0
 
 L = TEXTS[st.session_state.lang]
 
-# --- 4. CSS TỐI ƯU MOBILE (FIX LỖI CHE Ô SEARCH) ---
+# --- 5. CSS CUSTOM (FIX KHOẢNG ĐEN & STICKY SEARCH) ---
 st.markdown(f"""
     <style>
+    /* Ẩn header mặc định và xóa khoảng trắng đỉnh */
     header[data-testid="stHeader"] {{display: none !important;}}
+    .block-container {{ padding-top: 0px !important; padding-bottom: 0px !important; }}
+    
     .stApp {{ background-color: #0d1117; color: #c9d1d9; }}
     
-    /* Cố định Header để không bị bàn phím đẩy mất */
-    [data-testid="stVerticalBlock"] > div:first-child {{
+    /* Sticky Header: Giữ thanh search luôn ở đỉnh khi cuộn hoặc hiện bàn phím */
+    .sticky-nav {{
+        position: -webkit-sticky;
         position: sticky;
         top: 0;
-        z-index: 999;
         background-color: #0d1117;
-        padding-top: 10px;
-        padding-bottom: 10px;
+        z-index: 1000;
+        padding: 10px 0;
+        border-bottom: 1px solid #30363d;
     }}
-
+    
     .main-header {{ 
         background: linear-gradient(90deg, #00FFFF, #58a6ff); 
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
-        text-align: center; font-size: 22px; font-weight: 900; margin-bottom: 5px;
+        text-align: center; font-size: 24px; font-weight: 900;
     }}
-
-    /* Tối ưu ô selectbox trên mobile */
-    div[data-baseweb="select"] {{
-        margin-top: 5px;
-    }}
-
-    .info-box {{ background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 8px; text-align: center; margin-bottom: 5px; }}
-    .info-label {{ color: #8b949e; font-size: 10px; font-weight: bold; }}
-    .info-value {{ color: #ffffff; font-size: 14px; font-weight: 800; }}
-    .gauge-footer {{ color: #58a6ff; font-size: 12px; font-weight: 800; text-align: center; margin-top: -25px; }}
     
-    /* Chỉnh tab sát nhau hơn */
-    button[data-baseweb="tab"] {{ font-size: 12px !important; padding: 10px !important; }}
+    .info-box {{ background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; }}
+    .info-label {{ color: #8b949e; font-size: 11px; font-weight: bold; text-transform: uppercase; }}
+    .info-value {{ color: #ffffff; font-size: 16px; font-weight: 800; }}
+    .gauge-footer {{ color: #58a6ff; font-size: 13px; font-weight: 800; text-align: center; margin-top: -35px; }}
+    
+    /* Thu nhỏ tabs trên mobile */
+    button[data-baseweb="tab"] {{ padding: 10px 15px !important; }}
     </style>
 """, unsafe_allow_html=True)
 
-# --- 5. DATA ENGINE ---
+# --- 6. DATA ENGINE ---
 @st.cache_data(ttl=5)
 def load_data():
     try:
@@ -112,60 +114,65 @@ if res:
     df, c_id, c_name, c_pow, c_kill, c_rss = res
     options_list = [""] + df['Full_Search'].tolist()
     
-    # --- PHẦN CỐ ĐỊNH (STICKY) ---
+    # --- PHẦN ĐỈNH TRANG (STICKY) ---
     with st.container():
         st.markdown(f'<div class="main-header">{L["header"]}</div>', unsafe_allow_html=True)
-        c_l, c_s = st.columns([1, 4])
-        with c_l:
+        col_l, col_s = st.columns([1, 4])
+        with col_l:
             st.radio("L", ["VN", "EN"], index=0 if st.session_state.lang == "VN" else 1, 
-                     key="lang_radio", on_change=change_lang, horizontal=True, label_visibility="collapsed")
-        with c_s:
+                     key="lang_radio_key", on_change=change_lang_callback, horizontal=True, label_visibility="collapsed")
+        with col_s:
             choice = st.selectbox("S", options=options_list, index=st.session_state.selected_index,
                                   placeholder=L["placeholder"], label_visibility="collapsed", 
-                                  key="main_search", on_change=sync_search)
+                                  key="main_search", on_change=sync_search_callback)
 
-    # --- PHẦN NỘI DUNG CUỘN ---
     tab1, tab2 = st.tabs([L["tab1"], L["tab2"]])
     
     with tab1:
         if choice != "":
             d = df[df['Full_Search'] == choice].iloc[0]
+            
+            # --- 4 HỘP KPI ---
             m = st.columns(4)
             m[0].markdown(f'<div class="info-box"><div class="info-label">{L["rank"]}</div><div class="info-value" style="color:#FFD700;">#{int(d["H_RAW"])}</div></div>', unsafe_allow_html=True)
-            m[1].markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]/1e6)}M</div></div>', unsafe_allow_html=True)
+            m[1].markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>', unsafe_allow_html=True)
             m[2].markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
             m[3].markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
             
-            with st.expander(L["detail_title"]):
+            # --- CHI TIẾT THÔNG SỐ (Bổ sung T1-T5 và RSS) ---
+            with st.expander(L["detail_title"], expanded=False):
                 st.markdown(f"**{L['general_stats']}**")
                 g = st.columns(3)
                 g[0].markdown(f'<div class="info-box"><div class="info-label">ID</div><div class="info-value">{d[c_id]}</div></div>', unsafe_allow_html=True)
                 g[1].markdown(f'<div class="info-box"><div class="info-label">{L["name_label"]}</div><div class="info-value">{d[c_name]}</div></div>', unsafe_allow_html=True)
-                g[2].markdown(f'<div class="info-box"><div class="info-label">{L["rss_stats"]}</div><div class="info-value">{int(d[c_rss]/1e6)}M</div></div>', unsafe_allow_html=True)
+                g[2].markdown(f'<div class="info-box"><div class="info-label">{L["rss_stats"]}</div><div class="info-value">{int(d[c_rss]):,}</div></div>', unsafe_allow_html=True)
 
                 st.markdown(f"**{L['kill_stats']}**")
-                k_cols = st.columns(4)
-                for i in range(4, 0, -1):
-                    k_cols[5-i].markdown(f'<div class="info-box"><div class="info-label">T{i}</div><div class="info-value">{int(d[f"Tổng Tiêu Diệt T{i}"]/1e6)}M</div></div>', unsafe_allow_html=True)
+                k_cols = st.columns(5)
+                for i in range(5, 0, -1):
+                    k_cols[5-i].markdown(f'<div class="info-box"><div class="info-label">T{i} KILL</div><div class="info-value">{int(d[f"Tổng Tiêu Diệt T{i}"]):,}</div></div>', unsafe_allow_html=True)
 
                 st.markdown(f"**{L['dead_stats']}**")
                 d_cols = st.columns(5)
                 for i in range(5, 0, -1):
-                    d_cols[5-i].markdown(f'<div class="info-box"><div class="info-label">T{i}</div><div class="info-value">{int(d[f"T{i} tử vong"]/1000)}K</div></div>', unsafe_allow_html=True)
+                    d_cols[5-i].markdown(f'<div class="info-box"><div class="info-label">T{i} DEAD</div><div class="info-value">{int(d[f"T{i} tử vong"]):,}</div></div>', unsafe_allow_html=True)
 
+            # --- BIỂU ĐỒ GAUGE ---
             g1, g2 = st.columns(2)
             with g1:
-                fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], number={'suffix': "%", 'font':{'size':18}}, gauge={'bar': {'color': "#00FFFF"}, 'axis': {'range': [0, 100]}}))
-                fig_k.update_layout(height=140, margin=dict(l=10,r=10,t=30,b=0), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
+                fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], number={'suffix': "%", 'font':{'size':24}}, gauge={'bar': {'color': "#00FFFF"}, 'axis': {'range': [0, 100]}}))
+                fig_k.update_layout(height=180, margin=dict(l=20,r=20,t=30,b=0), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_k, use_container_width=True, config={'displayModeBar': False})
-                st.markdown(f'<div class="gauge-footer">{L["target_kill"]}{d[c_kill]/1e6:.1f}M/300M</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="gauge-footer">{L["target_kill"]}{d[c_kill]/1e6:.1f}M / 300M</div>', unsafe_allow_html=True)
             with g2:
-                fig_d = go.Figure(go.Indicator(mode="gauge+number", value=d['D_PCT'], number={'suffix': "%", 'font':{'size':18}}, gauge={'bar': {'color': "#f29b05"}, 'axis': {'range': [0, 100]}}))
-                fig_d.update_layout(height=140, margin=dict(l=10,r=10,t=30,b=0), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
+                fig_d = go.Figure(go.Indicator(mode="gauge+number", value=d['D_PCT'], number={'suffix': "%", 'font':{'size':24}}, gauge={'bar': {'color': "#f29b05"}, 'axis': {'range': [0, 100]}}))
+                fig_d.update_layout(height=180, margin=dict(l=20,r=20,t=30,b=0), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_d, use_container_width=True, config={'displayModeBar': False})
-                st.markdown(f'<div class="gauge-footer">{L["target_dead"]}{int(d["SUM_DEAD"]/1000)}K/400K</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="gauge-footer">{L["target_dead"]}{int(d["SUM_DEAD"]/1000)}K / 400K</div>', unsafe_allow_html=True)
         else:
-            st.image("https://github.com/thanhdt2106/rok-kpi-3956/blob/main/meme2.png?raw=true", use_column_width=True)
+            st.image("https://github.com/thanhdt2106/rok-kpi-3956/blob/main/meme1.png?raw=true", use_column_width=True)
 
     with tab2:
-        st.dataframe(df[['H_RAW', c_name, c_pow, c_kill, 'K_PCT', 'SUM_DEAD', 'D_PCT']], use_container_width=True)
+        v_df = df[['H_RAW', c_name, c_pow, c_kill, 'K_PCT', 'SUM_DEAD', 'D_PCT']].copy()
+        v_df.columns = [L['col_rank'], L['col_name'], L['col_power'], L['col_kill'], L['col_kpi_kill'], L['col_dead'], L['col_kpi_dead']]
+        st.dataframe(v_df.style.format({L['col_power']: '{:,.0f}', L['col_kill']: '{:,.0f}', L['col_dead']: '{:,.0f}', L['col_kpi_kill']: '{:.1f}%', L['col_kpi_dead']: '{:.1f}%'}), use_container_width=True, height=500)
