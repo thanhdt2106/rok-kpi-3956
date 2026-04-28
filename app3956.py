@@ -112,19 +112,31 @@ if res:
                  on_change=change_lang_callback,
                  horizontal=True, label_visibility="collapsed")
     
-    with col_search:
-        # Ô search gõ hiện gợi ý ngay, không mất dữ liệu khi đổi EN/VN
-        choice = st.selectbox(
-            "Search",
-            options=options_list,
-            index=st.session_state.selected_index,
-            placeholder=L["placeholder"],
-            label_visibility="collapsed",
-            key="main_search",
-            on_change=sync_search_callback
-        )
+  with col_search:
+    # 1. Kiểm tra xem người dùng đã nhập gì chưa thông qua session state của widget
+    # Lưu ý: 'main_search' là key của selectbox
+    current_search_term = st.session_state.get("main_search", "")
+    
+    # 2. Nếu chưa gõ gì (chuỗi rỗng), chỉ hiện danh sách trắng hoặc mục mặc định
+    # Nếu đã gõ, lọc danh sách dựa trên từ khóa
+    if current_search_term == "" or current_search_term == None:
+        filtered_options = [""] # Không hiện gì cả
+    else:
+        # Hiện các gợi ý khớp với từ khóa người dùng đang gõ
+        filtered_options = [opt for opt in options_list if current_search_term.lower() in opt.lower()]
+        if not filtered_options:
+            filtered_options = [""]
 
-    tab1, tab2 = st.tabs([L["tab1"], L["tab2"]])
+    # 3. Hiển thị Selectbox
+    choice = st.selectbox(
+        "Search",
+        options=filtered_options,
+        index=0,
+        placeholder=L["placeholder"],
+        label_visibility="collapsed",
+        key="main_search",
+        on_change=sync_search_callback
+    )
     
     with tab1:
         if choice != "":
