@@ -24,7 +24,8 @@ TEXTS = {
         "dead_stats": "💀 CHI TIẾT TỬ VONG (DEAD)",
         "col_rank": "HẠNG 🏆", "col_name": "CHIẾN BINH 🥷", "col_power": "SỨC MẠNH 🛡️",
         "col_kill": "ĐIỂM KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "LÍNH CHẾT 💀", "col_kpi_dead": "KPI DEAD ⚰️",
-        "id_label": "ID nhân vật", "name_label": "Tên Người Dùng"
+        "id_label": "ID nhân vật", "name_label": "Tên Người Dùng",
+        "pass_kpi": "✅ ĐÃ HOÀN THÀNH (>100%)", "fail_kpi": "⚠️ CHƯA ĐẠT KPI"
     },
     "EN": {
         "header": "KPI SYSTEM - SHARED HOUSE 3956",
@@ -38,7 +39,8 @@ TEXTS = {
         "dead_stats": "💀 DEAD DETAILS",
         "col_rank": "RANK 🏆", "col_name": "COMMANDER 🥷", "col_power": "POWER 🛡️",
         "col_kill": "KILL POINTS ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "DEAD UNITS 💀", "col_kpi_dead": "KPI DEAD ⚰️",
-        "id_label": "Character ID", "name_label": "Username"
+        "id_label": "Character ID", "name_label": "Username",
+        "pass_kpi": "✅ COMPLETED (>100%)", "fail_kpi": "⚠️ INCOMPLETE KPI"
     }
 }
 
@@ -62,6 +64,7 @@ st.markdown(f"""
     .info-label {{ color: #8b949e; font-size: 11px; font-weight: bold; text-transform: uppercase; }}
     .info-value {{ color: #ffffff; font-size: 16px; font-weight: 800; }}
     .gauge-footer {{ color: #58a6ff; font-size: 13px; font-weight: 800; text-align: center; margin-top: -35px; }}
+    .status-list {{ background: #161b22; border-radius: 10px; padding: 15px; border: 1px solid #30363d; height: 300px; overflow-y: auto; }}
     div[data-testid="stSearchbox"] input {{ background-color: #161b22 !important; color: white !important; border: 1px solid #30363d !important; border-radius: 8px !important; }}
     </style>
 """, unsafe_allow_html=True)
@@ -118,15 +121,12 @@ if res:
     with tab1:
         if choice:
             d = df[df['Full_Search'] == choice].iloc[0]
-            
-            # 4 CHỈ SỐ CHÍNH (LUÔN HIỆN)
             m1, m2, m3, m4 = st.columns(4)
             m1.markdown(f'<div class="info-box"><div class="info-label">{L["rank"]}</div><div class="info-value" style="color:#FFD700;">#{int(d["H_RAW"])}</div></div>', unsafe_allow_html=True)
             m2.markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>', unsafe_allow_html=True)
             m3.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
             m4.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
             
-            # CHI TIẾT (MẶC ĐỊNH ĐÓNG - expanded=False)
             with st.expander(L["detail_title"], expanded=False):
                 st.markdown(f"**{L['general_stats']}**")
                 c_cols = st.columns(5)
@@ -148,7 +148,6 @@ if res:
                 for i, col in enumerate(dead_cols):
                     d_cols_ui[i].markdown(f'<div class="info-box"><div class="info-label">{col}</div><div class="info-value">{int(d[col]):,}</div></div>', unsafe_allow_html=True)
 
-            # BIỂU ĐỒ KPI (LUÔN HIỆN)
             g1, g2 = st.columns(2)
             with g1:
                 fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], number={'suffix': "%", 'font':{'size':24}}, gauge={'bar': {'color': "#00FFFF"}, 'axis': {'range': [0, 100]}}))
@@ -164,9 +163,29 @@ if res:
             st.image("https://github.com/thanhdt2106/rok-kpi-3956/blob/main/meme2.png?raw=true", use_container_width=True)
 
     with tab2:
+        # BẢNG TỔNG QUAN
         v_df = df[['H_RAW', c_name, c_pow, c_kill, 'K_PCT', 'SUM_DEAD', 'D_PCT']].copy()
         v_df.columns = [L['col_rank'], L['col_name'], L['col_power'], L['col_kill'], L['col_kpi_kill'], L['col_dead'], L['col_kpi_dead']]
         st.dataframe(v_df.style.format({
             L['col_power']: '{:,.0f}', L['col_kill']: '{:,.0f}', L['col_dead']: '{:,.0f}', 
             L['col_kpi_kill']: '{:.1f}%', L['col_kpi_dead']: '{:.1f}%'
-        }), use_container_width=True, height=600)
+        }), use_container_width=True, height=400)
+
+        st.write("---")
+        
+        # --- THÊM 2 CỘT DANH SÁCH KPI ---
+        list_col1, list_col2 = st.columns(2)
+        
+        # Lọc danh sách
+        passed_list = df[df['K_PCT'] >= 100][c_name].tolist()
+        failed_list = df[df['K_PCT'] < 100][c_name].tolist()
+        
+        with list_col1:
+            st.markdown(f"<h4 style='color:#00FFFF; text-align:center;'>{L['pass_kpi']} ({len(passed_list)})</h4>", unsafe_allow_html=True)
+            passed_html = "".join([f"<div style='padding:5px; border-bottom:1px solid #30363d;'>🟢 {name}</div>" for name in passed_list])
+            st.markdown(f'<div class="status-list">{passed_html}</div>', unsafe_allow_html=True)
+            
+        with list_col2:
+            st.markdown(f"<h4 style='color:#f29b05; text-align:center;'>{L['fail_kpi']} ({len(failed_list)})</h4>", unsafe_allow_html=True)
+            failed_html = "".join([f"<div style='padding:5px; border-bottom:1px solid #30363d;'>🔴 {name}</div>" for name in failed_list])
+            st.markdown(f'<div class="status-list">{failed_html}</div>', unsafe_allow_html=True)
