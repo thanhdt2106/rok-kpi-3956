@@ -25,7 +25,7 @@ TEXTS = {
         "col_rank": "HẠNG 🏆", "col_name": "CHIẾN BINH 🥷", "col_power": "SỨC MẠNH 🛡️",
         "col_kill": "ĐIỂM KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "LÍNH CHẾT 💀", "col_kpi_dead": "KPI DEAD ⚰️",
         "id_label": "ID nhân vật", "name_label": "Tên Người Dùng",
-        "pass_kpi": "✅ ĐÃ HOÀN THÀNH (>100%)", "fail_kpi": "⚠️ CHƯA ĐẠT KPI"
+        "pass_kpi": "✅ ĐẠT CHỈ TIÊU (>60%K & >200%D)", "fail_kpi": "⚠️ CHƯA ĐẠT CHỈ TIÊU"
     },
     "EN": {
         "header": "KPI SYSTEM - SHARED HOUSE 3956",
@@ -40,7 +40,7 @@ TEXTS = {
         "col_rank": "RANK 🏆", "col_name": "COMMANDER 🥷", "col_power": "POWER 🛡️",
         "col_kill": "KILL POINTS ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "DEAD UNITS 💀", "col_kpi_dead": "KPI DEAD ⚰️",
         "id_label": "Character ID", "name_label": "Username",
-        "pass_kpi": "✅ COMPLETED (>100%)", "fail_kpi": "⚠️ INCOMPLETE KPI"
+        "pass_kpi": "✅ PASSED (>60%K & >200%D)", "fail_kpi": "⚠️ INCOMPLETE"
     }
 }
 
@@ -85,8 +85,12 @@ def load_data():
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
             
         df['SUM_DEAD'] = df[dead_cols].sum(axis=1)
+        
+        # LOGIC MỚI: 
+        # % Kill vẫn trên mốc 300M
         df['K_PCT'] = (df[c_kill] / 300_000_000 * 100).round(1)
-        df['D_PCT'] = (df['SUM_DEAD'] / 400_000 * 100).round(1)
+        # % Dead: Phải gấp đôi KPI (800K) mới tính là 100% đạt
+        df['D_PCT'] = (df['SUM_DEAD'] / 800_000 * 100).round(1)
         
         df = df.sort_values(by='K_PCT', ascending=False).reset_index(drop=True)
         df.insert(0, 'H_RAW', range(1, len(df) + 1))
@@ -158,12 +162,11 @@ if res:
                 fig_d = go.Figure(go.Indicator(mode="gauge+number", value=d['D_PCT'], number={'suffix': "%", 'font':{'size':24}}, gauge={'bar': {'color': "#f29b05"}, 'axis': {'range': [0, 100]}}))
                 fig_d.update_layout(height=200, margin=dict(l=15,r=15,t=40,b=10), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_d, use_container_width=True, config={'displayModeBar': False})
-                st.markdown(f'<div class="gauge-footer">{L["target_dead"]}{int(d["SUM_DEAD"]/1000)}K / 400K</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="gauge-footer">{L["target_dead"]}{int(d["SUM_DEAD"]/1000)}K / 800K (100% Target)</div>', unsafe_allow_html=True)
         else:
             st.image("https://github.com/thanhdt2106/rok-kpi-3956/blob/main/meme2.png?raw=true", use_container_width=True)
 
     with tab2:
-        # BẢNG TỔNG QUAN
         v_df = df[['H_RAW', c_name, c_pow, c_kill, 'K_PCT', 'SUM_DEAD', 'D_PCT']].copy()
         v_df.columns = [L['col_rank'], L['col_name'], L['col_power'], L['col_kill'], L['col_kpi_kill'], L['col_dead'], L['col_kpi_dead']]
         st.dataframe(v_df.style.format({
@@ -173,12 +176,13 @@ if res:
 
         st.write("---")
         
-        # --- THÊM 2 CỘT DANH SÁCH KPI ---
-        list_col1, list_col2 = st.columns(2)
+        # --- LOGIC LỌC DANH SÁCH ---
+        # Đạt khi: Kill > 60% VÀ Dead > 200%
+        passed_mask = (df['K_PCT'] > 60) & (df['D_PCT'] > 200)
+        passed_list = df[passed_mask][c_name].tolist()
+        failed_list = df[~passed_mask][c_name].tolist()
         
-        # Lọc danh sách
-        passed_list = df[df['K_PCT'] >= 100][c_name].tolist()
-        failed_list = df[df['K_PCT'] < 100][c_name].tolist()
+        list_col1, list_col2 = st.columns(2)
         
         with list_col1:
             st.markdown(f"<h4 style='color:#00FFFF; text-align:center;'>{L['pass_kpi']} ({len(passed_list)})</h4>", unsafe_allow_html=True)
