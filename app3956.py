@@ -70,7 +70,7 @@ st.markdown(f"""
 @st.cache_data(ttl=5)
 def load_data():
     try:
-        URL = 'https://docs.google.com/spreadsheets/d/1MJQSE3siwFWmQNdJmbbJ6RsilvcoxWTu-r6h-UdHugE/export?format=csv&gid=351056493'
+        URL = 'https://docs.google.com/spreadsheets/d/1MJQSE3siwFWmQNdJmbbJ6RsilvcoxWTu-r6h-UdHugE/export?format=csv&gid=1165928857'
         df = pd.read_csv(URL)
         df.columns = [str(c).strip() for c in df.columns]
         
