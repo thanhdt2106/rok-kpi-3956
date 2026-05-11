@@ -25,7 +25,7 @@ TEXTS = {
         "col_rank": "HẠNG 🏆", "col_name": "CHIẾN BINH 🥷", "col_power": "SỨC MẠNH 🛡️",
         "col_kill": "ĐIỂM KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "LÍNH CHẾT 💀", "col_kpi_dead": "KPI DEAD ⚰️",
         "id_label": "ID nhân vật", "name_label": "Tên Người Dùng",
-        "pass_kpi": "✅ ĐẠT CHỈ TIÊU (>60%K & >200%D)", "fail_kpi": "⚠️ CHƯA ĐẠT CHỈ TIÊU"
+        "pass_kpi": "✅ ĐẠT CHỈ TIÊU (>60%K HOẶC >200%D)", "fail_kpi": "⚠️ CHƯA ĐẠT CHỈ TIÊU"
     },
     "EN": {
         "header": "KPI SYSTEM - SHARED HOUSE 3956",
@@ -40,7 +40,7 @@ TEXTS = {
         "col_rank": "RANK 🏆", "col_name": "COMMANDER 🥷", "col_power": "POWER 🛡️",
         "col_kill": "KILL POINTS ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "DEAD UNITS 💀", "col_kpi_dead": "KPI DEAD ⚰️",
         "id_label": "Character ID", "name_label": "Username",
-        "pass_kpi": "✅ PASSED (>60%K & >200%D)", "fail_kpi": "⚠️ INCOMPLETE"
+        "pass_kpi": "✅ PASSED (>60%K OR >200%D)", "fail_kpi": "⚠️ INCOMPLETE"
     }
 }
 
@@ -64,7 +64,7 @@ st.markdown(f"""
     .info-label {{ color: #8b949e; font-size: 11px; font-weight: bold; text-transform: uppercase; }}
     .info-value {{ color: #ffffff; font-size: 16px; font-weight: 800; }}
     .gauge-footer {{ color: #58a6ff; font-size: 13px; font-weight: 800; text-align: center; margin-top: -35px; }}
-    .status-list {{ background: #161b22; border-radius: 10px; padding: 15px; border: 1px solid #30363d; height: 300px; overflow-y: auto; }}
+    .status-list {{ background: #161b22; border-radius: 10px; padding: 15px; border: 1px solid #30363d; height: 350px; overflow-y: auto; }}
     div[data-testid="stSearchbox"] input {{ background-color: #161b22 !important; color: white !important; border: 1px solid #30363d !important; border-radius: 8px !important; }}
     </style>
 """, unsafe_allow_html=True)
@@ -86,10 +86,9 @@ def load_data():
             
         df['SUM_DEAD'] = df[dead_cols].sum(axis=1)
         
-        # LOGIC MỚI: 
-        # % Kill vẫn trên mốc 300M
+        # Mốc 100% Kill: 300M
         df['K_PCT'] = (df[c_kill] / 300_000_000 * 100).round(1)
-        # % Dead: Phải gấp đôi KPI (800K) mới tính là 100% đạt
+        # Mốc 100% Dead: 800K (Gấp đôi KPI 400K)
         df['D_PCT'] = (df['SUM_DEAD'] / 800_000 * 100).round(1)
         
         df = df.sort_values(by='K_PCT', ascending=False).reset_index(drop=True)
@@ -167,6 +166,7 @@ if res:
             st.image("https://github.com/thanhdt2106/rok-kpi-3956/blob/main/meme2.png?raw=true", use_container_width=True)
 
     with tab2:
+        # BẢNG DỮ LIỆU
         v_df = df[['H_RAW', c_name, c_pow, c_kill, 'K_PCT', 'SUM_DEAD', 'D_PCT']].copy()
         v_df.columns = [L['col_rank'], L['col_name'], L['col_power'], L['col_kill'], L['col_kpi_kill'], L['col_dead'], L['col_kpi_dead']]
         st.dataframe(v_df.style.format({
@@ -176,9 +176,9 @@ if res:
 
         st.write("---")
         
-        # --- LOGIC LỌC DANH SÁCH ---
-        # Đạt khi: Kill > 60% VÀ Dead > 200%
-        passed_mask = (df['K_PCT'] > 60) & (df['D_PCT'] > 200)
+        # --- LOGIC LỌC DANH SÁCH (HOẶC) ---
+        # Đạt nếu: Kill > 60% HOẶC Dead > 200%
+        passed_mask = (df['K_PCT'] > 60) | (df['D_PCT'] > 200)
         passed_list = df[passed_mask][c_name].tolist()
         failed_list = df[~passed_mask][c_name].tolist()
         
