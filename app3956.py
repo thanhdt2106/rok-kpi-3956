@@ -111,7 +111,7 @@ st.markdown("""
     }
     .banner-container img {
         width: 100%;
-        height: 220px;
+        height: 500px;
         object-fit: cover;
     }
 
