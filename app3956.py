@@ -18,7 +18,6 @@ TEXTS = {
         "placeholder": "🔍 Nhập tên hoặc ID để tìm kiếm...",
         "rank": "🏆 HẠNG", "power_now": "🛡️ SỨC MẠNH", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT", 
-        "target_kill": "ĐẠT: ", "target_dead": "ĐẠT: ",
         "general_stats": "📊 THÔNG SỐ TỔNG QUÁT",
         "kill_stats": "⚔️ CHI TIẾT TIÊU DIỆT (KILL)",
         "dead_stats": "💀 CHI TIẾT TỬ VONG (DEAD)",
@@ -33,7 +32,6 @@ TEXTS = {
         "placeholder": "🔍 Type name or ID to search...",
         "rank": "🏆 RANK", "power_now": "🛡️ POWER", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 VIEW FULL STATISTICS", 
-        "target_kill": "REACHED: ", "target_dead": "REACHED: ",
         "general_stats": "📊 GENERAL STATISTICS",
         "kill_stats": "⚔️ KILL DETAILS",
         "dead_stats": "💀 DEAD DETAILS",
@@ -117,12 +115,12 @@ def load_data():
         
         df['SUM_DEAD'] = df[['T1', 'T2', 'T3', 'T4', 'T5']].sum(axis=1)
         
-        # --- TÍNH TOÁN KPI MỚI ---
+        # --- TÍNH TOÁN KPI THEO YÊU CẦU ---
         # 1. KPI Kill = Sức Mạnh * 3
         df['TARGET_KILL'] = df[c_pow] * 3
         df['K_PCT'] = ((df[c_kill] / df['TARGET_KILL']) * 100).fillna(0).round(1)
         
-        # 2. KPI Dead theo các mốc Sức Mạnh
+        # 2. KPI Dead theo mốc Sức Mạnh
         def get_dead_target(pow_val):
             if pow_val >= 50_000_000:
                 return 600_000
@@ -207,9 +205,10 @@ if res:
                 fig_k.update_layout(height=200, margin=dict(l=15,r=15,t=40,b=10), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_k, use_container_width=True, config={'displayModeBar': False})
                 
-                target_k_str = f"{d[c_kill]:,.0f}".replace(",", ".")
-                max_k_str = f"{d['TARGET_KILL']:,.0f}".replace(",", ".")
-                st.markdown(f'<div class="gauge-footer">{L["target_kill"]} {target_k_str} / {max_k_str}</div>', unsafe_allow_html=True)
+                # Chú thích dưới chân hiển thị số liệu thực tế và KPI Kill cần đạt
+                actual_k = f"{d[c_kill]:,.0f}".replace(",", ".")
+                target_k = f"{d['TARGET_KILL']:,.0f}".replace(",", ".")
+                st.markdown(f'<div class="gauge-footer">KILL: {actual_k} / Cần đạt: {target_k}</div>', unsafe_allow_html=True)
 
             with g2:
                 fig_d = go.Figure(go.Indicator(
@@ -221,9 +220,10 @@ if res:
                 fig_d.update_layout(height=200, margin=dict(l=15,r=15,t=40,b=10), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_d, use_container_width=True, config={'displayModeBar': False})
                 
-                target_d_str = f"{d['SUM_DEAD']:,.0f}".replace(",", ".")
-                max_d_str = f"{d['TARGET_DEAD']:,.0f}".replace(",", ".")
-                st.markdown(f'<div class="gauge-footer">{L["target_dead"]} {target_d_str} / {max_d_str}</div>', unsafe_allow_html=True)
+                # Chú thích dưới chân hiển thị số liệu thực tế và KPI Dead cần đạt theo mốc Power
+                actual_d = f"{d['SUM_DEAD']:,.0f}".replace(",", ".")
+                target_d = f"{d['TARGET_DEAD']:,.0f}".replace(",", ".")
+                st.markdown(f'<div class="gauge-footer">DEAD: {actual_d} / Cần đạt: {target_d}</div>', unsafe_allow_html=True)
         else:
             st.info("💡 Vui lòng tìm kiếm tên hoặc ID chiến binh ở khung phía trên.")
 
