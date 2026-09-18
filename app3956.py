@@ -6,7 +6,7 @@ from streamlit_searchbox import st_searchbox
 # --- 1. CẤU HÌNH TRANG & CẤU HÌNH BANNER ---
 st.set_page_config(page_title="FTD KPI SYSTEM", layout="wide", initial_sidebar_state="collapsed")
 
-# 🔴 Đã cập nhật đường dẫn ảnh trang chủ từ GitHub của bạn (dùng dạng raw để Streamlit hiển thị trực tiếp):
+# Đường dẫn ảnh trang chủ từ GitHub của bạn:
 BANNER_URL = "https://raw.githubusercontent.com/thanhdt2106/rok-kpi-3956/2808e8f9ed167971c44b842ef91dde0c15ce86d8/meme2.png"
 
 # --- 2. KHỞI TẠO SESSION STATE ---
@@ -62,6 +62,7 @@ st.markdown("""
         max-height: 220px;
         overflow: hidden;
         border-radius: 14px;
+        margin-top: 20px;
         margin-bottom: 15px;
         border: 1px solid rgba(59, 130, 246, 0.3);
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
@@ -264,10 +265,7 @@ if res:
         term = str(search_term).lower()
         return [opt for opt in options_list if term in str(opt).lower()][:10]
 
-    # --- HIỂN THỊ BANNER VÀ TIÊU ĐỀ ---
-    if BANNER_URL:
-        st.markdown(f'<div class="banner-container"><img src="{BANNER_URL}" alt="Header Banner"></div>', unsafe_allow_html=True)
-
+    # --- HIỂN THỊ TIÊU ĐỀ Ở PHẦN TRÊN ---
     st.markdown(f'<div class="main-header">{L["header"]}</div>', unsafe_allow_html=True)
     
     col_lang, col_search = st.columns([1, 4])
@@ -381,3 +379,7 @@ if res:
             st.markdown(f"<h4 style='color:#fb923c; text-align:center; font-size:16px;'>{L['fail_kpi']} ({len(failed_list)})</h4>", unsafe_allow_html=True)
             failed_html = "".join([f"<div class='status-item'>🔴 &nbsp; {name}</div>" for name in failed_list])
             st.markdown(f'<div class="status-list">{failed_html}</div>', unsafe_allow_html=True)
+
+    # --- 7. HIỂN THỊ BANNER Ở PHẦN DƯỚI CÙNG ---
+    if BANNER_URL:
+        st.markdown(f'<div class="banner-container"><img src="{BANNER_URL}" alt="Footer Banner"></div>', unsafe_allow_html=True)
