@@ -16,7 +16,7 @@ if 'lang' not in st.session_state:
 # --- 3. DỮ LIỆU PHIÊN DỊCH TOÀN DIỆN (ĐÃ DỊCH HẾT SANG ANH) ---
 TEXTS = {
     "VN": {
-        "header": "HỆ THỐNG KPI - SHARED HOUSE 3956",
+        "header": "HỆ THỐNG KPI - BIKINI BOTTOM 3958",
         "tab1": "👤 HỒ SƠ CHI TIẾT", 
         "tab2": "📊 TỔNG QUAN QUÂN ĐOÀN",
         "placeholder": "🔍 Nhập tên hoặc ID để tìm kiếm chiến binh...",
