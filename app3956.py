@@ -15,11 +15,11 @@ TEXTS = {
     "VN": {
         "header": "HỆ THỐNG KPI - SHARED HOUSE 3956",
         "tab1": "👤 HỒ SƠ CHI TIẾT", "tab2": "📊 TỔNG QUAN QUÂN ĐOÀN",
-        "placeholder": "🔍 Nhập tên hoặc ID để tìm kiếm...",
+        "placeholder": "🔍 Nhập tên hoặc ID để tìm kiếm chiến binh...",
         "rank": "🏆 HẠNG", "power_now": "🛡️ SỨC MẠNH (GID 1)", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT", 
-        "general_stats": "📊 thông số tổng quát",
-        "kill_stats": "⚔️ ĐIỂM TIÊU DIỆT ĐÃ KIẾM ĐƯỢC Ở MÙA GIẢI NÀY (T4 + T5)",
+        "general_stats": "📊 THÔNG SỐ TỔNG QUÁT",
+        "kill_stats": "⚔️ ĐIỂM TIÊU DIỆT MÙA GIẢI (T4 + T5)",
         "dead_stats": "💀 ĐIỂM TỬ VONG CHI TIẾT TRONG MÙA GIẢI (GID 2 - GID 1)",
         "col_rank": "HẠNG 🏆", "col_name": "CHIẾN BINH 🥷", "col_alliance": "LIÊN MINH 🛡️", "col_power": "SỨC MẠNH 🛡️",
         "col_kill": "TOTAL KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "SEASON DEAD 💀", "col_kpi_dead": "KPI DEAD ⚰️",
@@ -29,7 +29,7 @@ TEXTS = {
     "EN": {
         "header": "KPI SYSTEM - SHARED HOUSE 3956",
         "tab1": "👤 DETAILED PROFILE", "tab2": "📊 ALLIANCE OVERVIEW",
-        "placeholder": "🔍 Type name or ID to search...",
+        "placeholder": "🔍 Type name or ID to search warrior...",
         "rank": "🏆 RANK", "power_now": "🛡️ POWER (GID 1)", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 VIEW FULL STATISTICS", 
         "general_stats": "📊 GENERAL STATISTICS",
@@ -48,22 +48,118 @@ def change_lang_callback():
 
 L = TEXTS[st.session_state.lang]
 
-# --- 5. CSS CUSTOM ---
-st.markdown(f"""
+# --- 5. CSS CUSTOM NÂNG CAO & RESPONSIVE ---
+st.markdown("""
     <style>
-    header[data-testid="stHeader"] {{display: none !important;}}
-    .stApp {{ background-color: #0d1117; color: #c9d1d9; }}
-    .main-header {{ 
-        background: linear-gradient(90deg, #00FFFF, #58a6ff); 
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
-        text-align: center; font-size: clamp(22px, 5vw, 32px); font-weight: 900; padding-bottom: 15px;
-    }}
-    .info-box {{ background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; min-height: 70px; }}
-    .info-label {{ color: #8b949e; font-size: 11px; font-weight: bold; text-transform: uppercase; }}
-    .info-value {{ color: #ffffff; font-size: 16px; font-weight: 800; }}
-    .gauge-footer {{ color: #58a6ff; font-size: 13px; font-weight: 800; text-align: center; margin-top: -35px; }}
-    .status-list {{ background: #161b22; border-radius: 10px; padding: 15px; border: 1px solid #30363d; height: 350px; overflow-y: auto; }}
-    div[data-testid="stSearchbox"] input {{ background-color: #161b22 !important; color: white !important; border: 1px solid #30363d !important; border-radius: 8px !important; }}
+    /* Tổng thể ứng dụng */
+    header[data-testid="stHeader"] {display: none !important;}
+    .stApp { background-color: #0b0f19; color: #e6edfd; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    
+    /* Tiêu đề chính lung linh, co giãn theo màn hình */
+    .main-header { 
+        background: linear-gradient(135deg, #00ffff 0%, #3b82f6 50%, #8b5cf6 100%); 
+        -webkit-background-clip: text; 
+        -webkit-text-fill-color: transparent; 
+        text-align: center; 
+        font-size: clamp(20px, 4vw, 36px); 
+        font-weight: 800; 
+        padding: 10px 0 20px 0;
+        letter-spacing: 0.5px;
+    }
+
+    /* Các thẻ thông tin (Info-box) cao cấp, bóng mờ tinh tế */
+    .info-box { 
+        background: linear-gradient(145deg, #131b2e, #0f172a); 
+        border: 1px solid rgba(59, 130, 246, 0.2); 
+        border-radius: 12px; 
+        padding: 12px 8px; 
+        text-align: center; 
+        margin-bottom: 10px; 
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .info-box:hover {
+        border-color: rgba(0, 255, 255, 0.4);
+        transform: translateY(-2px);
+    }
+    .info-label { 
+        color: #94a3b8; 
+        font-size: 11px; 
+        font-weight: 700; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+    .info-value { 
+        color: #f8fafc; 
+        font-size: clamp(14px, 2vw, 18px); 
+        font-weight: 800; 
+    }
+
+    /* Chú thích dưới biểu đồ gauge */
+    .gauge-footer { 
+        color: #38bdf8; 
+        font-size: 12px; 
+        font-weight: 700; 
+        text-align: center; 
+        margin-top: -25px;
+        background: rgba(15, 23, 42, 0.6);
+        padding: 4px;
+        border-radius: 6px;
+    }
+
+    /* Khung danh sách trạng thái đạt/chưa đạt */
+    .status-list { 
+        background: #111827; 
+        border-radius: 12px; 
+        padding: 15px; 
+        border: 1px solid rgba(255, 255, 255, 0.08); 
+        height: 380px; 
+        overflow-y: auto; 
+        box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
+    }
+    .status-item {
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Tối ưu ô tìm kiếm */
+    div[data-testid="stSearchbox"] input { 
+        background-color: #111827 !important; 
+        color: #ffffff !important; 
+        border: 1px solid rgba(59, 130, 246, 0.4) !important; 
+        border-radius: 10px !important; 
+        padding: 8px 12px !important;
+    }
+    
+    /* Tùy chỉnh các Tabs cho đẹp mắt */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        justify-content: center;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: #131b2e;
+        border-radius: 8px 8px 0 0;
+        color: #94a3b8;
+        font-weight: 700;
+        padding: 10px 20px;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #1e3a8a, #1e293b);
+        color: #38bdf8 !important;
+        border-color: rgba(56, 189, 248, 0.4) !important;
+    }
+
+    /* Responsive cho thiết bị di động nhỏ */
+    @media (max-width: 768px) {
+        .info-box { padding: 8px 4px; min-height: 60px; }
+        .info-value { font-size: 13px; }
+        .main-header { font-size: 18px; }
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -88,7 +184,6 @@ def load_data():
         c_name = "Tên"
         c_alliance = "Liên Minh"
         
-        # Nhận diện cột
         c_pow = next((c for c in df1.columns if "sức mạnh" in c.lower() or "power" in c.lower()), "Sức Mạnh")
         c_kill = next((c for c in df1.columns if "tiêu" in c.lower() or "kill" in c.lower()), "Tổng Tiêu Điệt")
         
@@ -104,23 +199,21 @@ def load_data():
         df[c_name] = merged[c_name + '_2']
         df[c_alliance] = merged[c_alliance + '_2'] if c_alliance + '_2' in merged.columns else ""
         
-        # 1. Sức mạnh lấy từ GID 1 để tính KPI Kill
+        # Sức mạnh GID 1
         df[c_pow] = pd.to_numeric(merged[c_pow + '_1'], errors='coerce').fillna(0)
         
-        # 2. Total Kill lấy từ GID 2
+        # Total Kill GID 2
         df['TOTAL_KILL'] = pd.to_numeric(merged.get(c_kill + '_2', 0), errors='coerce').fillna(0)
         
-        # 3. Chi tiết tử vong và Tổng lính chết trong mùa giải tính bằng hiệu số (GID 2 - GID 1) cho từng cột T1..T5
+        # Hiệu số Dead (GID 2 - GID 1)
         for col in dead_cols:
-            col_2 = col + '_2'
-            col_1 = col + '_1'
-            val_2 = pd.to_numeric(merged.get(col_2, 0), errors='coerce').fillna(0)
-            val_1 = pd.to_numeric(merged.get(col_1, 0), errors='coerce').fillna(0)
+            val_2 = pd.to_numeric(merged.get(col + '_2', 0), errors='coerce').fillna(0)
+            val_1 = pd.to_numeric(merged.get(col + '_1', 0), errors='coerce').fillna(0)
             df[col] = val_2 - val_1
             
         df['TOTAL_DEAD'] = df[dead_cols].sum(axis=1)
         
-        # 4. Điểm tiêu diệt mùa giải (T4 + T5)
+        # Điểm tiêu diệt mùa giải (T4 + T5)
         kill_t4_col = next((c for c in df1.columns if "t4" in c.lower() and ("kill" in c.lower() or "tiêu" in c.lower())), None)
         kill_t5_col = next((c for c in df1.columns if "t5" in c.lower() and ("kill" in c.lower() or "tiêu" in c.lower())), None)
         
@@ -130,7 +223,7 @@ def load_data():
         else:
             df['SEASON_KILL'] = pd.to_numeric(merged.get(c_kill + '_2', 0), errors='coerce').fillna(0) - pd.to_numeric(merged.get(c_kill + '_1', 0), errors='coerce').fillna(0)
 
-        # --- TÍNH TOÁN KPI ---
+        # Tính toán KPI
         df['TARGET_KILL'] = df[c_pow] * 3
         df['K_PCT'] = ((df['SEASON_KILL'] / df['TARGET_KILL']) * 100).fillna(0).round(1)
         
@@ -184,10 +277,10 @@ if res:
         if choice:
             d = df[df['Full_Search'] == choice].iloc[0]
             m1, m2, m3, m4 = st.columns(4)
-            m1.markdown(f'<div class="info-box"><div class="info-label">{L["rank"]}</div><div class="info-value" style="color:#FFD700;">#{int(d["H_RAW"])}</div></div>', unsafe_allow_html=True)
+            m1.markdown(f'<div class="info-box"><div class="info-label">{L["rank"]}</div><div class="info-value" style="color:#fbbf24;">#{int(d["H_RAW"])}</div></div>', unsafe_allow_html=True)
             m2.markdown(f'<div class="info-box"><div class="info-label">{L["power_now"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
-            m3.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#00FFFF;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
-            m4.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#f29b05;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
+            m3.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_kill_pct"]}</div><div class="info-value" style="color:#22d3ee;">{d["K_PCT"]}%</div></div>', unsafe_allow_html=True)
+            m4.markdown(f'<div class="info-box"><div class="info-label">{L["kpi_dead_pct"]}</div><div class="info-value" style="color:#fb923c;">{d["D_PCT"]}%</div></div>', unsafe_allow_html=True)
             
             with st.expander(L["detail_title"], expanded=False):
                 st.markdown(f"**{L['general_stats']}**")
@@ -212,10 +305,15 @@ if res:
                 fig_k = go.Figure(go.Indicator(
                     mode="gauge+number", 
                     value=d['K_PCT'], 
-                    number={'suffix': "%", 'font':{'size':24}}, 
-                    gauge={'bar': {'color': "#00FFFF"}, 'axis': {'range': [0, max(100, d['K_PCT'])]}}
+                    number={'suffix': "%", 'font':{'size':22, 'color': '#ffffff'}}, 
+                    gauge={
+                        'bar': {'color': "#22d3ee"}, 
+                        'axis': {'range': [0, max(100, d['K_PCT'])], 'tickcolor': "#94a3b8"},
+                        'bgcolor': "#1e293b",
+                        'borderwidth': 0
+                    }
                 ))
-                fig_k.update_layout(height=200, margin=dict(l=15,r=15,t=40,b=10), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
+                fig_k.update_layout(height=190, margin=dict(l=10,r=10,t=35,b=10), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_k, use_container_width=True, config={'displayModeBar': False})
                 
                 actual_k = f"{d['SEASON_KILL']:,.0f}".replace(",", ".")
@@ -226,10 +324,15 @@ if res:
                 fig_d = go.Figure(go.Indicator(
                     mode="gauge+number", 
                     value=d['D_PCT'], 
-                    number={'suffix': "%", 'font':{'size':24}}, 
-                    gauge={'bar': {'color': "#f29b05"}, 'axis': {'range': [0, max(100, d['D_PCT'])]}}
+                    number={'suffix': "%", 'font':{'size':22, 'color': '#ffffff'}}, 
+                    gauge={
+                        'bar': {'color': "#fb923c"}, 
+                        'axis': {'range': [0, max(100, d['D_PCT'])], 'tickcolor': "#94a3b8"},
+                        'bgcolor': "#1e293b",
+                        'borderwidth': 0
+                    }
                 ))
-                fig_d.update_layout(height=200, margin=dict(l=15,r=15,t=40,b=10), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
+                fig_d.update_layout(height=190, margin=dict(l=10,r=10,t=35,b=10), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_d, use_container_width=True, config={'displayModeBar': False})
                 
                 actual_d = f"{d['TOTAL_DEAD']:,.0f}".replace(",", ".")
@@ -252,7 +355,7 @@ if res:
         for col in dead_cols:
             format_dict[col] = lambda x: f"{int(x):,}".replace(",", ".")
 
-        st.dataframe(v_df.style.format(format_dict), use_container_width=True, height=400)
+        st.dataframe(v_df.style.format(format_dict), use_container_width=True, height=420)
 
         st.write("---")
         
@@ -263,11 +366,11 @@ if res:
         list_col1, list_col2 = st.columns(2)
         
         with list_col1:
-            st.markdown(f"<h4 style='color:#00FFFF; text-align:center;'>{L['pass_kpi']} ({len(passed_list)})</h4>", unsafe_allow_html=True)
-            passed_html = "".join([f"<div style='padding:5px; border-bottom:1px solid #30363d;'>🟢 {name}</div>" for name in passed_list])
+            st.markdown(f"<h4 style='color:#22d3ee; text-align:center; font-size:16px;'>{L['pass_kpi']} ({len(passed_list)})</h4>", unsafe_allow_html=True)
+            passed_html = "".join([f"<div class='status-item'>🟢 &nbsp; {name}</div>" for name in passed_list])
             st.markdown(f'<div class="status-list">{passed_html}</div>', unsafe_allow_html=True)
             
         with list_col2:
-            st.markdown(f"<h4 style='color:#f29b05; text-align:center;'>{L['fail_kpi']} ({len(failed_list)})</h4>", unsafe_allow_html=True)
-            failed_html = "".join([f"<div style='padding:5px; border-bottom:1px solid #30363d;'>🔴 {name}</div>" for name in failed_list])
+            st.markdown(f"<h4 style='color:#fb923c; text-align:center; font-size:16px;'>{L['fail_kpi']} ({len(failed_list)})</h4>", unsafe_allow_html=True)
+            failed_html = "".join([f"<div class='status-item'>🔴 &nbsp; {name}</div>" for name in failed_list])
             st.markdown(f'<div class="status-list">{failed_html}</div>', unsafe_allow_html=True)
