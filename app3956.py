@@ -69,7 +69,7 @@ st.markdown("""
     }
     .banner-container img {
         width: 100%;
-        height: 220px;
+        height: 600px;
         object-fit: cover;
     }
 
