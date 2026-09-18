@@ -118,12 +118,11 @@ def load_data():
         df['SUM_DEAD'] = df[['T1', 'T2', 'T3', 'T4', 'T5']].sum(axis=1)
         
         # --- TÍNH TOÁN KPI MỚI ---
-        # 1. Target Kill = Sức Mạnh * 3
+        # 1. KPI Kill = Sức Mạnh * 3
         df['TARGET_KILL'] = df[c_pow] * 3
-        # Tránh chia cho 0
         df['K_PCT'] = ((df[c_kill] / df['TARGET_KILL']) * 100).fillna(0).round(1)
         
-        # 2. Target Dead dựa theo mốc Sức Mạnh
+        # 2. KPI Dead theo các mốc Sức Mạnh
         def get_dead_target(pow_val):
             if pow_val >= 50_000_000:
                 return 600_000
@@ -199,15 +198,32 @@ if res:
 
             g1, g2 = st.columns(2)
             with g1:
-                fig_k = go.Figure(go.Indicator(mode="gauge+number", value=d['K_PCT'], number={'suffix': "%", 'font':{'size':24}}, gauge={'bar': {'color': "#00FFFF"}, 'axis': {'range': [0, max(100, d['K_PCT'])]}}))
+                fig_k = go.Figure(go.Indicator(
+                    mode="gauge+number", 
+                    value=d['K_PCT'], 
+                    number={'suffix': "%", 'font':{'size':24}}, 
+                    gauge={'bar': {'color': "#00FFFF"}, 'axis': {'range': [0, max(100, d['K_PCT'])]}}
+                ))
                 fig_k.update_layout(height=200, margin=dict(l=15,r=15,t=40,b=10), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_k, use_container_width=True, config={'displayModeBar': False})
-                st.markdown(f'<div class="gauge-footer">{L["target_kill"]}{int(d[c_kill]):,} / {int(d["TARGET_KILL"]):,}</div>'.replace(",", "."), unsafe_allow_html=True)
+                
+                target_k_str = f"{d[c_kill]:,.0f}".replace(",", ".")
+                max_k_str = f"{d['TARGET_KILL']:,.0f}".replace(",", ".")
+                st.markdown(f'<div class="gauge-footer">{L["target_kill"]} {target_k_str} / {max_k_str}</div>', unsafe_allow_html=True)
+
             with g2:
-                fig_d = go.Figure(go.Indicator(mode="gauge+number", value=d['D_PCT'], number={'suffix': "%", 'font':{'size':24}}, gauge={'bar': {'color': "#f29b05"}, 'axis': {'range': [0, max(100, d['D_PCT'])]}}))
+                fig_d = go.Figure(go.Indicator(
+                    mode="gauge+number", 
+                    value=d['D_PCT'], 
+                    number={'suffix': "%", 'font':{'size':24}}, 
+                    gauge={'bar': {'color': "#f29b05"}, 'axis': {'range': [0, max(100, d['D_PCT'])]}}
+                ))
                 fig_d.update_layout(height=200, margin=dict(l=15,r=15,t=40,b=10), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_d, use_container_width=True, config={'displayModeBar': False})
-                st.markdown(f'<div class="gauge-footer">{L["target_dead"]}{int(d["SUM_DEAD"]):,} / {int(d["TARGET_DEAD"]):,}</div>'.replace(",", "."), unsafe_allow_html=True)
+                
+                target_d_str = f"{d['SUM_DEAD']:,.0f}".replace(",", ".")
+                max_d_str = f"{d['TARGET_DEAD']:,.0f}".replace(",", ".")
+                st.markdown(f'<div class="gauge-footer">{L["target_dead"]} {target_d_str} / {max_d_str}</div>', unsafe_allow_html=True)
         else:
             st.info("💡 Vui lòng tìm kiếm tên hoặc ID chiến binh ở khung phía trên.")
 
