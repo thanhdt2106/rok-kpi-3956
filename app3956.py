@@ -3,8 +3,11 @@ import pandas as pd
 import plotly.graph_objects as go
 from streamlit_searchbox import st_searchbox
 
-# --- 1. CẤU HÌNH TRANG ---
+# --- 1. CẤU HÌNH TRANG & CẤU HÌNH BANNER ---
 st.set_page_config(page_title="FTD KPI SYSTEM", layout="wide", initial_sidebar_state="collapsed")
+
+# 🔴 Đã cập nhật đường dẫn ảnh trang chủ từ GitHub của bạn (dùng dạng raw để Streamlit hiển thị trực tiếp):
+BANNER_URL = "https://raw.githubusercontent.com/thanhdt2106/rok-kpi-3956/2808e8f9ed167971c44b842ef91dde0c15ce86d8/meme2.png"
 
 # --- 2. KHỞI TẠO SESSION STATE ---
 if 'lang' not in st.session_state:
@@ -51,11 +54,24 @@ L = TEXTS[st.session_state.lang]
 # --- 5. CSS CUSTOM NÂNG CAO & RESPONSIVE ---
 st.markdown("""
     <style>
-    /* Tổng thể ứng dụng */
     header[data-testid="stHeader"] {display: none !important;}
     .stApp { background-color: #0b0f19; color: #e6edfd; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     
-    /* Tiêu đề chính lung linh, co giãn theo màn hình */
+    .banner-container {
+        width: 100%;
+        max-height: 220px;
+        overflow: hidden;
+        border-radius: 14px;
+        margin-bottom: 15px;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+    .banner-container img {
+        width: 100%;
+        height: 220px;
+        object-fit: cover;
+    }
+
     .main-header { 
         background: linear-gradient(135deg, #00ffff 0%, #3b82f6 50%, #8b5cf6 100%); 
         -webkit-background-clip: text; 
@@ -63,11 +79,10 @@ st.markdown("""
         text-align: center; 
         font-size: clamp(20px, 4vw, 36px); 
         font-weight: 800; 
-        padding: 10px 0 20px 0;
+        padding: 5px 0 15px 0;
         letter-spacing: 0.5px;
     }
 
-    /* Các thẻ thông tin (Info-box) cao cấp, bóng mờ tinh tế */
     .info-box { 
         background: linear-gradient(145deg, #131b2e, #0f172a); 
         border: 1px solid rgba(59, 130, 246, 0.2); 
@@ -96,7 +111,6 @@ st.markdown("""
         font-weight: 800; 
     }
 
-    /* Chú thích dưới biểu đồ gauge */
     .gauge-footer { 
         color: #38bdf8; 
         font-size: 12px; 
@@ -108,7 +122,6 @@ st.markdown("""
         border-radius: 6px;
     }
 
-    /* Khung danh sách trạng thái đạt/chưa đạt */
     .status-list { 
         background: #111827; 
         border-radius: 12px; 
@@ -126,7 +139,6 @@ st.markdown("""
         align-items: center;
     }
 
-    /* Tối ưu ô tìm kiếm */
     div[data-testid="stSearchbox"] input { 
         background-color: #111827 !important; 
         color: #ffffff !important; 
@@ -135,11 +147,7 @@ st.markdown("""
         padding: 8px 12px !important;
     }
     
-    /* Tùy chỉnh các Tabs cho đẹp mắt */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        justify-content: center;
-    }
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; justify-content: center; }
     .stTabs [data-baseweb="tab"] {
         background-color: #131b2e;
         border-radius: 8px 8px 0 0;
@@ -154,8 +162,9 @@ st.markdown("""
         border-color: rgba(56, 189, 248, 0.4) !important;
     }
 
-    /* Responsive cho thiết bị di động nhỏ */
     @media (max-width: 768px) {
+        .banner-container { max-height: 140px; }
+        .banner-container img { height: 140px; }
         .info-box { padding: 8px 4px; min-height: 60px; }
         .info-value { font-size: 13px; }
         .main-header { font-size: 18px; }
@@ -199,13 +208,9 @@ def load_data():
         df[c_name] = merged[c_name + '_2']
         df[c_alliance] = merged[c_alliance + '_2'] if c_alliance + '_2' in merged.columns else ""
         
-        # Sức mạnh GID 1
         df[c_pow] = pd.to_numeric(merged[c_pow + '_1'], errors='coerce').fillna(0)
-        
-        # Total Kill GID 2
         df['TOTAL_KILL'] = pd.to_numeric(merged.get(c_kill + '_2', 0), errors='coerce').fillna(0)
         
-        # Hiệu số Dead (GID 2 - GID 1)
         for col in dead_cols:
             val_2 = pd.to_numeric(merged.get(col + '_2', 0), errors='coerce').fillna(0)
             val_1 = pd.to_numeric(merged.get(col + '_1', 0), errors='coerce').fillna(0)
@@ -213,7 +218,6 @@ def load_data():
             
         df['TOTAL_DEAD'] = df[dead_cols].sum(axis=1)
         
-        # Điểm tiêu diệt mùa giải (T4 + T5)
         kill_t4_col = next((c for c in df1.columns if "t4" in c.lower() and ("kill" in c.lower() or "tiêu" in c.lower())), None)
         kill_t5_col = next((c for c in df1.columns if "t5" in c.lower() and ("kill" in c.lower() or "tiêu" in c.lower())), None)
         
@@ -223,7 +227,6 @@ def load_data():
         else:
             df['SEASON_KILL'] = pd.to_numeric(merged.get(c_kill + '_2', 0), errors='coerce').fillna(0) - pd.to_numeric(merged.get(c_kill + '_1', 0), errors='coerce').fillna(0)
 
-        # Tính toán KPI
         df['TARGET_KILL'] = df[c_pow] * 3
         df['K_PCT'] = ((df['SEASON_KILL'] / df['TARGET_KILL']) * 100).fillna(0).round(1)
         
@@ -260,6 +263,10 @@ if res:
             return []
         term = str(search_term).lower()
         return [opt for opt in options_list if term in str(opt).lower()][:10]
+
+    # --- HIỂN THỊ BANNER VÀ TIÊU ĐỀ ---
+    if BANNER_URL:
+        st.markdown(f'<div class="banner-container"><img src="{BANNER_URL}" alt="Header Banner"></div>', unsafe_allow_html=True)
 
     st.markdown(f'<div class="main-header">{L["header"]}</div>', unsafe_allow_html=True)
     
