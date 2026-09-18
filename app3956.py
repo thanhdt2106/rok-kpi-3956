@@ -18,11 +18,11 @@ TEXTS = {
         "placeholder": "🔍 Nhập tên hoặc ID để tìm kiếm...",
         "rank": "🏆 HẠNG", "power_now": "🛡️ SỨC MẠNH (GID 1)", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT", 
-        "general_stats": "📊 THÔNG SỐ TỔNG QUÁT",
+        "general_stats": "📊 thông số tổng quát",
         "kill_stats": "⚔️ ĐIỂM TIÊU DIỆT ĐÃ KIẾM ĐƯỢC Ở MÙA GIẢI NÀY (T4 + T5)",
-        "dead_stats": "💀 ĐIỂM TỬ VONG CHI TIẾT (GID 2)",
+        "dead_stats": "💀 ĐIỂM TỬ VONG CHI TIẾT TRONG MÙA GIẢI (GID 2 - GID 1)",
         "col_rank": "HẠNG 🏆", "col_name": "CHIẾN BINH 🥷", "col_alliance": "LIÊN MINH 🛡️", "col_power": "SỨC MẠNH 🛡️",
-        "col_kill": "TOTAL KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "TOTAL DEAD 💀", "col_kpi_dead": "KPI DEAD ⚰️",
+        "col_kill": "TOTAL KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "SEASON DEAD 💀", "col_kpi_dead": "KPI DEAD ⚰️",
         "id_label": "ID nhân vật", "name_label": "Tên Người Dùng",
         "pass_kpi": "✅ ĐẠT CHỈ TIÊU (>60%K HOẶC >100%D)", "fail_kpi": "⚠️ CHƯA ĐẠT CHỈ TIÊU"
     },
@@ -34,9 +34,9 @@ TEXTS = {
         "detail_title": "📌 VIEW FULL STATISTICS", 
         "general_stats": "📊 GENERAL STATISTICS",
         "kill_stats": "⚔️ SEASON KILL POINTS (T4 + T5)",
-        "dead_stats": "💀 DETAILED DEAD (GID 2)",
+        "dead_stats": "💀 SEASON DETAILED DEAD (GID 2 - GID 1)",
         "col_rank": "RANK 🏆", "col_name": "COMMANDER 🥷", "col_alliance": "ALLIANCE 🛡️", "col_power": "POWER 🛡️",
-        "col_kill": "TOTAL KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "TOTAL DEAD 💀", "col_kpi_dead": "KPI DEAD ⚰️",
+        "col_kill": "TOTAL KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "SEASON DEAD 💀", "col_kpi_dead": "KPI DEAD ⚰️",
         "id_label": "Character ID", "name_label": "Username",
         "pass_kpi": "✅ PASSED (>60%K OR >100%D)", "fail_kpi": "⚠️ INCOMPLETE"
     }
@@ -91,7 +91,6 @@ def load_data():
         # Nhận diện cột
         c_pow = next((c for c in df1.columns if "sức mạnh" in c.lower() or "power" in c.lower()), "Sức Mạnh")
         c_kill = next((c for c in df1.columns if "tiêu" in c.lower() or "kill" in c.lower()), "Tổng Tiêu Điệt")
-        c_dead_pts = next((c for c in df1.columns if "điểm chết" in c.lower() or "dead" in c.lower()), "Điểm Chết")
         
         dead_cols = ['T1', 'T2', 'T3', 'T4', 'T5']
         
@@ -111,21 +110,17 @@ def load_data():
         # 2. Total Kill lấy từ GID 2
         df['TOTAL_KILL'] = pd.to_numeric(merged.get(c_kill + '_2', 0), errors='coerce').fillna(0)
         
-        # 3. Total Dead lấy điểm chết từ GID 2[cite: 8]
-        df['TOTAL_DEAD'] = pd.to_numeric(merged.get(c_dead_pts + '_2', 0), errors='coerce').fillna(0)
-        
-        # 4. Chi tiết tử vong hiển thị các cột T1..T5 ở GID 2
+        # 3. Chi tiết tử vong và Tổng lính chết trong mùa giải tính bằng hiệu số (GID 2 - GID 1) cho từng cột T1..T5
         for col in dead_cols:
             col_2 = col + '_2'
-            df[col] = pd.to_numeric(merged.get(col_2, 0), errors='coerce').fillna(0)
+            col_1 = col + '_1'
+            val_2 = pd.to_numeric(merged.get(col_2, 0), errors='coerce').fillna(0)
+            val_1 = pd.to_numeric(merged.get(col_1, 0), errors='coerce').fillna(0)
+            df[col] = val_2 - val_1
             
-        # 5. Điểm tiêu diệt mùa giải (T4 + T5 hoặc hiệu số GID2 - GID1 cho T4, T5 nếu có, hoặc hiệu số tổng kill)
-        # Giả sử bạn có cột T4_kill, T5_kill hoặc tính hiệu số T4, T5 mùa giải. Ở đây nếu chỉ có tổng kill, ta lấy hiệu số tổng kill GID2 - GID1 nhân phần trăm hoặc nếu có cột T4, T5 riêng cho kill thì tính. 
-        # Theo yêu cầu: "tính T4 và T5 cộng lại để ra kill đã đạt" từ GID 2 - GID 1:
-        t4_diff = pd.to_numeric(merged.get('T4_2', 0), errors='coerce').fillna(0) - pd.to_numeric(merged.get('T4_1', 0), errors='coerce').fillna(0)
-        t5_diff = pd.to_numeric(merged.get('T5_2', 0), errors='coerce').fillna(0) - pd.to_numeric(merged.get('T5_1', 0), errors='coerce').fillna(0)
-        # Nếu bảng của bạn có cột riêng chứa điểm kill T4, T5 thì thay thế, tạm thời ta tính hiệu số T4 + T5 lính chết hoặc nếu ý bạn là điểm kill T4+T5, ta dùng hiệu số tổng kill nếu không tách cột. 
-        # Để an toàn theo ý bạn "lấy điểm Tiêu diệt sau khi lấy GID 2 - GID 1 ở phần này chỉ tính T4 và T5 cộng lại":
+        df['TOTAL_DEAD'] = df[dead_cols].sum(axis=1)
+        
+        # 4. Điểm tiêu diệt mùa giải (T4 + T5)
         kill_t4_col = next((c for c in df1.columns if "t4" in c.lower() and ("kill" in c.lower() or "tiêu" in c.lower())), None)
         kill_t5_col = next((c for c in df1.columns if "t5" in c.lower() and ("kill" in c.lower() or "tiêu" in c.lower())), None)
         
@@ -133,7 +128,6 @@ def load_data():
             df['SEASON_KILL'] = (pd.to_numeric(merged[kill_t4_col + '_2'], errors='coerce').fillna(0) - pd.to_numeric(merged[kill_t4_col + '_1'], errors='coerce').fillna(0)) + \
                                 (pd.to_numeric(merged[kill_t5_col + '_2'], errors='coerce').fillna(0) - pd.to_numeric(merged[kill_t5_col + '_1'], errors='coerce').fillna(0))
         else:
-            # Fallback nếu không có cột T4/T5 kill riêng thì lấy hiệu số tổng kill GID2 - GID1
             df['SEASON_KILL'] = pd.to_numeric(merged.get(c_kill + '_2', 0), errors='coerce').fillna(0) - pd.to_numeric(merged.get(c_kill + '_1', 0), errors='coerce').fillna(0)
 
         # --- TÍNH TOÁN KPI ---
@@ -202,7 +196,7 @@ if res:
                 c_cols[1].markdown(f'<div class="info-box"><div class="info-label">{L["name_label"]}</div><div class="info-value">{d[c_name]}</div></div>', unsafe_allow_html=True)
                 c_cols[2].markdown(f'<div class="info-box"><div class="info-label">Sức Mạnh</div><div class="info-value">{int(d[c_pow]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
                 c_cols[3].markdown(f'<div class="info-box"><div class="info-label">Total Kill</div><div class="info-value">{int(d["TOTAL_KILL"]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
-                c_cols[4].markdown(f'<div class="info-box"><div class="info-label">Total Dead</div><div class="info-value">{int(d["TOTAL_DEAD"]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
+                c_cols[4].markdown(f'<div class="info-box"><div class="info-label">Season Dead</div><div class="info-value">{int(d["TOTAL_DEAD"]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
                 
                 st.write("---")
                 st.markdown(f"**{L['kill_stats']}**")
@@ -211,7 +205,7 @@ if res:
                 st.markdown(f"**{L['dead_stats']}**")
                 d_cols_ui = st.columns(len(dead_cols))
                 for i, col in enumerate(dead_cols):
-                    d_cols_ui[i].markdown(f'<div class="info-box"><div class="info-label">{col} (GID 2)</div><div class="info-value">{int(d[col]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
+                    d_cols_ui[i].markdown(f'<div class="info-box"><div class="info-label">{col} (Mùa giải)</div><div class="info-value">{int(d[col]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
 
             g1, g2 = st.columns(2)
             with g1:
