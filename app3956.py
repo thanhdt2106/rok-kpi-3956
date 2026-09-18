@@ -233,9 +233,7 @@ if res:
             st.markdown(f"<h4 style='color:#f29b05; text-align:center;'>{L['fail_kpi']} ({len(failed_list)})</h4>", unsafe_allow_html=True)
             failed_html = "".join([f"<div style='padding:5px; border-bottom:1px solid #30363d;'>🔴 {name}</div>" for name in failed_list])
             st.markdown(f'<div class="status-list">{failed_html}</div>', unsafe_allow_html=True)import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
-from streamlit_searchbox import st_searchbox
+
 
 # --- 1. CẤU HÌNH TRANG ---
 st.set_page_config(page_title="FTD KPI SYSTEM", layout="wide", initial_sidebar_state="collapsed")
