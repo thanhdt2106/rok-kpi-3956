@@ -139,7 +139,7 @@ if res:
         if search_term is None: 
             return []
         term = str(search_term).lower()
-        return [opt for opt in options_list if term in opt.lower()][:10]
+        return [opt for opt in options_list if term in str(opt).lower()][:10]
 
     st.markdown(f'<div class="main-header">{L["header"]}</div>', unsafe_allow_html=True)
     
