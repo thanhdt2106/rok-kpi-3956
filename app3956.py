@@ -13,35 +13,77 @@ BANNER_URL = "https://raw.githubusercontent.com/thanhdt2106/rok-kpi-3956/2808e8f
 if 'lang' not in st.session_state:
     st.session_state.lang = "VN"
 
-# --- 3. DỮ LIỆU PHIÊN DỊCH TOÀN DIỆN ---
+# --- 3. DỮ LIỆU PHIÊN DỊCH TOÀN DIỆN (ĐÃ DỊCH HẾT SANG ANH) ---
 TEXTS = {
     "VN": {
         "header": "HỆ THỐNG KPI - SHARED HOUSE 3956",
-        "tab1": "👤 HỒ SƠ CHI TIẾT", "tab2": "📊 TỔNG QUAN QUÂN ĐOÀN",
+        "tab1": "👤 HỒ SƠ CHI TIẾT", 
+        "tab2": "📊 TỔNG QUAN QUÂN ĐOÀN",
         "placeholder": "🔍 Nhập tên hoặc ID để tìm kiếm chiến binh...",
-        "rank": "🏆 HẠNG", "power_now": "🛡️ SỨC MẠNH (GID 1)", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
+        "rank": "🏆 HẠNG", 
+        "power_now": "🛡️ SỨC MẠNH (GID 1)", 
+        "kpi_kill_pct": "🔥 % KILL", 
+        "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT", 
         "general_stats": "📊 THÔNG SỐ TỔNG QUÁT",
         "kill_stats": "⚔️ ĐIỂM TIÊU DIỆT MÙA GIẢI (T4 + T5)",
         "dead_stats": "💀 ĐIỂM TỬ VONG CHI TIẾT TRONG MÙA GIẢI (GID 2 - GID 1)",
-        "col_rank": "HẠNG 🏆", "col_name": "CHIẾN BINH 🥷", "col_alliance": "LIÊN MINH 🛡️", "col_power": "SỨC MẠNH 🛡️",
-        "col_kill": "TOTAL KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "SEASON DEAD 💀", "col_kpi_dead": "KPI DEAD ⚰️",
-        "id_label": "ID nhân vật", "name_label": "Tên Người Dùng",
-        "pass_kpi": "✅ ĐẠT CHỈ TIÊU (>60%K HOẶC >100%D)", "fail_kpi": "⚠️ CHƯA ĐẠT CHỈ TIÊU"
+        "col_rank": "HẠNG 🏆", 
+        "col_name": "CHIẾN BINH 🥷", 
+        "col_alliance": "LIÊN MINH 🛡️", 
+        "col_power": "SỨC MẠNH 🛡️",
+        "col_kill": "TOTAL KILL ⚔️", 
+        "col_kpi_kill": "KPI KILL 🔥", 
+        "col_dead": "SEASON DEAD 💀", 
+        "col_kpi_dead": "KPI DEAD ⚰️",
+        "id_label": "ID nhân vật", 
+        "name_label": "Tên Người Dùng",
+        "power_label": "Sức Mạnh",
+        "season_dead_label": "Season Dead",
+        "season_kill_label": "Điểm Tiêu Diệt Mùa Giải (T4+T5)",
+        "dead_season_suffix": "(Mùa giải)",
+        "kill_achieved_label": "KILL ĐẠT",
+        "required_label": "Cần đạt",
+        "dead_achieved_label": "DEAD",
+        "pass_kpi": "✅ ĐẠT CHỈ TIÊU (>60%K HOẶC >100%D)", 
+        "fail_kpi": "⚠️ CHƯA ĐẠT CHỈ TIÊU",
+        "search_hint": "💡 Vui lòng tìm kiếm tên hoặc ID chiến binh ở khung phía trên.",
+        "load_error": "Lỗi tải dữ liệu: "
     },
     "EN": {
         "header": "KPI SYSTEM - SHARED HOUSE 3956",
-        "tab1": "👤 DETAILED PROFILE", "tab2": "📊 ALLIANCE OVERVIEW",
+        "tab1": "👤 DETAILED PROFILE", 
+        "tab2": "📊 ALLIANCE OVERVIEW",
         "placeholder": "🔍 Type name or ID to search warrior...",
-        "rank": "🏆 RANK", "power_now": "🛡️ POWER (GID 1)", "kpi_kill_pct": "🔥 % KILL", "kpi_dead_pct": "💀 % DEAD",
+        "rank": "🏆 RANK", 
+        "power_now": "🛡️ POWER (GID 1)", 
+        "kpi_kill_pct": "🔥 % KILL", 
+        "kpi_dead_pct": "💀 % DEAD",
         "detail_title": "📌 VIEW FULL STATISTICS", 
         "general_stats": "📊 GENERAL STATISTICS",
         "kill_stats": "⚔️ SEASON KILL POINTS (T4 + T5)",
         "dead_stats": "💀 SEASON DETAILED DEAD (GID 2 - GID 1)",
-        "col_rank": "RANK 🏆", "col_name": "COMMANDER 🥷", "col_alliance": "ALLIANCE 🛡️", "col_power": "POWER 🛡️",
-        "col_kill": "TOTAL KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "SEASON DEAD 💀", "col_kpi_dead": "KPI DEAD ⚰️",
-        "id_label": "Character ID", "name_label": "Username",
-        "pass_kpi": "✅ PASSED (>60%K OR >100%D)", "fail_kpi": "⚠️ INCOMPLETE"
+        "col_rank": "RANK 🏆", 
+        "col_name": "COMMANDER 🥷", 
+        "col_alliance": "ALLIANCE 🛡️", 
+        "col_power": "POWER 🛡️",
+        "col_kill": "TOTAL KILL ⚔️", 
+        "col_kpi_kill": "KPI KILL 🔥", 
+        "col_dead": "SEASON DEAD 💀", 
+        "col_kpi_dead": "KPI DEAD ⚰️",
+        "id_label": "Character ID", 
+        "name_label": "Username",
+        "power_label": "Power",
+        "season_dead_label": "Season Dead",
+        "season_kill_label": "Season Kill Points (T4+T5)",
+        "dead_season_suffix": "(Season)",
+        "kill_achieved_label": "KILL ACHIEVED",
+        "required_label": "Required",
+        "dead_achieved_label": "DEAD",
+        "pass_kpi": "✅ PASSED (>60%K OR >100%D)", 
+        "fail_kpi": "⚠️ INCOMPLETE",
+        "search_hint": "💡 Please search for a warrior's name or ID in the box above.",
+        "load_error": "Data loading error: "
     }
 }
 
@@ -59,7 +101,7 @@ st.markdown("""
     
     .banner-container {
         width: 100%;
-        max-height: 600px;
+        max-height: 220px;
         overflow: hidden;
         border-radius: 14px;
         margin-top: 20px;
@@ -69,7 +111,7 @@ st.markdown("""
     }
     .banner-container img {
         width: 100%;
-        height: 600px;
+        height: 220px;
         object-fit: cover;
     }
 
@@ -250,7 +292,7 @@ def load_data():
         
         return df, c_id, c_name, c_alliance, c_pow, dead_cols
     except Exception as e:
-        st.error(f"Lỗi tải dữ liệu: {e}")
+        st.error(f"{TEXTS[st.session_state.lang]['load_error']}{e}")
         return None
 
 res = load_data()
@@ -292,18 +334,18 @@ if res:
                 c_cols = st.columns(5)
                 c_cols[0].markdown(f'<div class="info-box"><div class="info-label">ID</div><div class="info-value">{d[c_id]}</div></div>', unsafe_allow_html=True)
                 c_cols[1].markdown(f'<div class="info-box"><div class="info-label">{L["name_label"]}</div><div class="info-value">{d[c_name]}</div></div>', unsafe_allow_html=True)
-                c_cols[2].markdown(f'<div class="info-box"><div class="info-label">Sức Mạnh</div><div class="info-value">{int(d[c_pow]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
+                c_cols[2].markdown(f'<div class="info-box"><div class="info-label">{L["power_label"]}</div><div class="info-value">{int(d[c_pow]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
                 c_cols[3].markdown(f'<div class="info-box"><div class="info-label">Total Kill</div><div class="info-value">{int(d["TOTAL_KILL"]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
-                c_cols[4].markdown(f'<div class="info-box"><div class="info-label">Season Dead</div><div class="info-value">{int(d["TOTAL_DEAD"]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
+                c_cols[4].markdown(f'<div class="info-box"><div class="info-label">{L["season_dead_label"]}</div><div class="info-value">{int(d["TOTAL_DEAD"]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
                 
                 st.write("---")
                 st.markdown(f"**{L['kill_stats']}**")
-                st.markdown(f'<div class="info-box"><div class="info-label">Điểm Tiêu Diệt Mùa Giải (T4+T5)</div><div class="info-value">{int(d["SEASON_KILL"]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
+                st.markdown(f'<div class="info-box"><div class="info-label">{L["season_kill_label"]}</div><div class="info-value">{int(d["SEASON_KILL"]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
                 
                 st.markdown(f"**{L['dead_stats']}**")
                 d_cols_ui = st.columns(len(dead_cols))
                 for i, col in enumerate(dead_cols):
-                    d_cols_ui[i].markdown(f'<div class="info-box"><div class="info-label">{col} (Mùa giải)</div><div class="info-value">{int(d[col]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
+                    d_cols_ui[i].markdown(f'<div class="info-box"><div class="info-label">{col} {L["dead_season_suffix"]}</div><div class="info-value">{int(d[col]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
 
             g1, g2 = st.columns(2)
             with g1:
@@ -323,7 +365,7 @@ if res:
                 
                 actual_k = f"{d['SEASON_KILL']:,.0f}".replace(",", ".")
                 target_k = f"{d['TARGET_KILL']:,.0f}".replace(",", ".")
-                st.markdown(f'<div class="gauge-footer">KILL ĐẠT: {actual_k} / Cần đạt: {target_k}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="gauge-footer">{L["kill_achieved_label"]}: {actual_k} / {L["required_label"]}: {target_k}</div>', unsafe_allow_html=True)
 
             with g2:
                 fig_d = go.Figure(go.Indicator(
@@ -342,9 +384,9 @@ if res:
                 
                 actual_d = f"{d['TOTAL_DEAD']:,.0f}".replace(",", ".")
                 target_d = f"{d['TARGET_DEAD']:,.0f}".replace(",", ".")
-                st.markdown(f'<div class="gauge-footer">DEAD: {actual_d} / Cần đạt: {target_d}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="gauge-footer">{L["dead_achieved_label"]}: {actual_d} / {L["required_label"]}: {target_d}</div>', unsafe_allow_html=True)
         else:
-            st.info("💡 Vui lòng tìm kiếm tên hoặc ID chiến binh ở khung phía trên.")
+            st.info(L["search_hint"])
 
     with tab2:
         v_df = df[['H_RAW', c_name, c_alliance, c_pow, 'TOTAL_KILL'] + dead_cols + ['K_PCT', 'TOTAL_DEAD', 'D_PCT']].copy()
