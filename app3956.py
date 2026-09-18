@@ -101,7 +101,7 @@ st.markdown("""
     
     .banner-container {
         width: 100%;
-        max-height: 220px;
+        max-height: 500px;
         overflow: hidden;
         border-radius: 14px;
         margin-top: 20px;
