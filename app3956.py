@@ -21,7 +21,7 @@ TEXTS = {
         "general_stats": "📊 THÔNG SỐ TỔNG QUÁT",
         "kill_stats": "⚔️ CHI TIẾT TIÊU DIỆT (KILL)",
         "dead_stats": "💀 CHI TIẾT TỬ VONG (DEAD)",
-        "col_rank": "HẠNG 🏆", "col_name": "CHIẾN BINH 🥷", "col_alliance": "LIÊN MINH 🛡️", "col_power": "SỨC MẠNH 🛡️",
+        "col_rank": "HẠNG 🏆", "col_name": "CHIẾN BINH 🥷", "col_alliance": "LIÊN MINH 🛡️", "col_power": "SỨC MẠNH (GID 1) 🛡️",
         "col_kill": "ĐIỂM KILL ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "LÍNH CHẾT 💀", "col_kpi_dead": "KPI DEAD ⚰️",
         "id_label": "ID nhân vật", "name_label": "Tên Người Dùng",
         "pass_kpi": "✅ ĐẠT CHỈ TIÊU (>60%K HOẶC >100%D)", "fail_kpi": "⚠️ CHƯA ĐẠT CHỈ TIÊU"
@@ -35,7 +35,7 @@ TEXTS = {
         "general_stats": "📊 GENERAL STATISTICS",
         "kill_stats": "⚔️ KILL DETAILS",
         "dead_stats": "💀 DEAD DETAILS",
-        "col_rank": "RANK 🏆", "col_name": "COMMANDER 🥷", "col_alliance": "ALLIANCE 🛡️", "col_power": "POWER 🛡️",
+        "col_rank": "RANK 🏆", "col_name": "COMMANDER 🥷", "col_alliance": "ALLIANCE 🛡️", "col_power": "POWER (GID 1) 🛡️",
         "col_kill": "KILL POINTS ⚔️", "col_kpi_kill": "KPI KILL 🔥", "col_dead": "DEAD UNITS 💀", "col_kpi_dead": "KPI DEAD ⚰️",
         "id_label": "Character ID", "name_label": "Username",
         "pass_kpi": "✅ PASSED (>60%K OR >100%D)", "fail_kpi": "⚠️ INCOMPLETE"
@@ -67,7 +67,7 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 6. DATA ENGINE (XỬ LÝ TRỪ GID 2 - GID 1) ---
+# --- 6. DATA ENGINE ---
 @st.cache_data(ttl=5)
 def load_data():
     try:
@@ -87,8 +87,10 @@ def load_data():
         c_id = "ID"
         c_name = "Tên"
         c_alliance = "Liên Minh"
-        c_pow = "Sức Mạnh"
-        c_kill = "Tổng Tiêu Điệt" if "Tổng Tiêu Điệt" in df1.columns else "Tổng Tiêu Diệt"
+        
+        # Nhận diện chính xác tên cột Sức Mạnh và Tiêu Diệt
+        c_pow = next((c for c in df1.columns if "sức mạnh" in c.lower() or "power" in c.lower()), "Sức Mạnh")
+        c_kill = next((c for c in df1.columns if "tiêu" in c.lower() or "kill" in c.lower()), "Tổng Tiêu Điệt")
         
         dead_cols = ['T1', 'T2', 'T3', 'T4', 'T5']
         
@@ -102,7 +104,11 @@ def load_data():
         df[c_name] = merged[c_name + '_2']
         df[c_alliance] = merged[c_alliance + '_2'] if c_alliance + '_2' in merged.columns else ""
         
-        numeric_cols = [c_pow, c_kill] + dead_cols + ['Điểm Chết']
+        # --- THAY ĐỔI: LẤY SỨC MẠNH TỪ GID 1 (_1) ---
+        df[c_pow] = pd.to_numeric(merged[c_pow + '_1'], errors='coerce').fillna(0)
+        
+        # Các chỉ số khác tính hiệu số GID 2 - GID 1
+        numeric_cols = [c_kill] + dead_cols + ['Điểm Chết']
         for col in numeric_cols:
             col_2 = col + '_2'
             col_1 = col + '_1'
@@ -115,12 +121,12 @@ def load_data():
         
         df['SUM_DEAD'] = df[['T1', 'T2', 'T3', 'T4', 'T5']].sum(axis=1)
         
-        # --- TÍNH TOÁN KPI THEO YÊU CẦU ---
-        # 1. KPI Kill = Sức Mạnh * 3
+        # --- TÍNH TOÁN KPI ĐÚNG YÊU CẦU MỚI ---
+        # 1. KPI Kill = Sức Mạnh GID 1 * 3
         df['TARGET_KILL'] = df[c_pow] * 3
         df['K_PCT'] = ((df[c_kill] / df['TARGET_KILL']) * 100).fillna(0).round(1)
         
-        # 2. KPI Dead theo mốc Sức Mạnh
+        # 2. KPI Dead theo mốc Sức Mạnh GID 1
         def get_dead_target(pow_val):
             if pow_val >= 50_000_000:
                 return 600_000
@@ -205,7 +211,6 @@ if res:
                 fig_k.update_layout(height=200, margin=dict(l=15,r=15,t=40,b=10), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_k, use_container_width=True, config={'displayModeBar': False})
                 
-                # Chú thích dưới chân hiển thị số liệu thực tế và KPI Kill cần đạt
                 actual_k = f"{d[c_kill]:,.0f}".replace(",", ".")
                 target_k = f"{d['TARGET_KILL']:,.0f}".replace(",", ".")
                 st.markdown(f'<div class="gauge-footer">KILL: {actual_k} / Cần đạt: {target_k}</div>', unsafe_allow_html=True)
@@ -220,7 +225,6 @@ if res:
                 fig_d.update_layout(height=200, margin=dict(l=15,r=15,t=40,b=10), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
                 st.plotly_chart(fig_d, use_container_width=True, config={'displayModeBar': False})
                 
-                # Chú thích dưới chân hiển thị số liệu thực tế và KPI Dead cần đạt theo mốc Power
                 actual_d = f"{d['SUM_DEAD']:,.0f}".replace(",", ".")
                 target_d = f"{d['TARGET_DEAD']:,.0f}".replace(",", ".")
                 st.markdown(f'<div class="gauge-footer">DEAD: {actual_d} / Cần đạt: {target_d}</div>', unsafe_allow_html=True)
