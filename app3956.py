@@ -136,7 +136,8 @@ if res:
     options_list = df['Full_Search'].tolist()
 
     def search_warriors(search_term: str):
-        if not search_term or len(search_term) < 1: return []
+        if not search_term or not isinstance(search_term, str): 
+            return []
         return [opt for opt in options_list if search_term.lower() in opt.lower()][:10]
 
     st.markdown(f'<div class="main-header">{L["header"]}</div>', unsafe_allow_html=True)
