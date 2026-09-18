@@ -59,7 +59,7 @@ st.markdown("""
     
     .banner-container {
         width: 100%;
-        max-height: 220px;
+        max-height: 600px;
         overflow: hidden;
         border-radius: 14px;
         margin-top: 20px;
