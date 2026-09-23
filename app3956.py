@@ -13,7 +13,7 @@ BANNER_URL = "https://raw.githubusercontent.com/thanhdt2106/rok-kpi-3956/2808e8f
 if 'lang' not in st.session_state:
     st.session_state.lang = "VN"
 
-# --- 3. DỮ LIỆU PHIÊN DỊCH TOÀN DIỆN (ĐÃ DỊCH HẾT SANG ANH) ---
+# --- 3. DỮ LIỆU PHIÊN DỊCH TOÀN DIỆN ---
 TEXTS = {
     "VN": {
         "header": "HỆ THỐNG KPI - SHARED HOUSE 3956",
@@ -27,7 +27,7 @@ TEXTS = {
         "detail_title": "📌 XEM THÔNG SỐ CHI TIẾT", 
         "general_stats": "📊 THÔNG SỐ TỔNG QUÁT",
         "kill_stats": "⚔️ ĐIỂM TIÊU DIỆT MÙA GIẢI (T4 + T5)",
-        "dead_stats": "💀 ĐIỂM TỬ VONG CHI TIẾT TRONG MÙA GIẢI (GID 2 - GID 1)",
+        "dead_stats": "💀 ĐIỂM TỬ VONG CHI TIẾT TRONG MÙA GIẢI",
         "col_rank": "HẠNG 🏆", 
         "col_name": "CHIẾN BINH 🥷", 
         "col_alliance": "LIÊN MINH 🛡️", 
@@ -39,7 +39,7 @@ TEXTS = {
         "id_label": "ID nhân vật", 
         "name_label": "Tên Người Dùng",
         "power_label": "Sức Mạnh",
-        "season_dead_label": "Season Dead",
+        "season_dead_label": "Điểm Chết Mùa Giải",
         "season_kill_label": "Điểm Tiêu Diệt Mùa Giải (T4+T5)",
         "dead_season_suffix": "(Mùa giải)",
         "kill_achieved_label": "KILL ĐẠT",
@@ -62,7 +62,7 @@ TEXTS = {
         "detail_title": "📌 VIEW FULL STATISTICS", 
         "general_stats": "📊 GENERAL STATISTICS",
         "kill_stats": "⚔️ SEASON KILL POINTS (T4 + T5)",
-        "dead_stats": "💀 SEASON DETAILED DEAD (GID 2 - GID 1)",
+        "dead_stats": "💀 SEASON DETAILED DEAD",
         "col_rank": "RANK 🏆", 
         "col_name": "COMMANDER 🥷", 
         "col_alliance": "ALLIANCE 🛡️", 
@@ -74,7 +74,7 @@ TEXTS = {
         "id_label": "Character ID", 
         "name_label": "Username",
         "power_label": "Power",
-        "season_dead_label": "Season Dead",
+        "season_dead_label": "Season Dead Points",
         "season_kill_label": "Season Kill Points (T4+T5)",
         "dead_season_suffix": "(Season)",
         "kill_achieved_label": "KILL ACHIEVED",
@@ -239,7 +239,8 @@ def load_data():
         c_pow = next((c for c in df1.columns if "sức mạnh" in c.lower() or "power" in c.lower()), "Sức Mạnh")
         c_kill = next((c for c in df1.columns if "tiêu" in c.lower() or "kill" in c.lower()), "Tổng Tiêu Điệt")
         
-        dead_cols = ['T1', 'T2', 'T3', 'T4', 'T5']
+        # Tìm cột điểm chết trực tiếp
+        c_dead = next((c for c in df1.columns if "chết" in c.lower() or "dead" in c.lower()), "Điểm Chết")
         
         df1[c_id] = df1[c_id].astype(str).str.strip()
         df2[c_id] = df2[c_id].astype(str).str.strip()
@@ -254,12 +255,10 @@ def load_data():
         df[c_pow] = pd.to_numeric(merged[c_pow + '_1'], errors='coerce').fillna(0)
         df['TOTAL_KILL'] = pd.to_numeric(merged.get(c_kill + '_2', 0), errors='coerce').fillna(0)
         
-        for col in dead_cols:
-            val_2 = pd.to_numeric(merged.get(col + '_2', 0), errors='coerce').fillna(0)
-            val_1 = pd.to_numeric(merged.get(col + '_1', 0), errors='coerce').fillna(0)
-            df[col] = val_2 - val_1
-            
-        df['TOTAL_DEAD'] = df[dead_cols].sum(axis=1)
+        # Lấy điểm chết Sheet 2 - Sheet 1 trực tiếp cho TOTAL_DEAD
+        dead_val_2 = pd.to_numeric(merged.get(c_dead + '_2', 0), errors='coerce').fillna(0)
+        dead_val_1 = pd.to_numeric(merged.get(c_dead + '_1', 0), errors='coerce').fillna(0)
+        df['TOTAL_DEAD'] = dead_val_2 - dead_val_1
         
         kill_t4_col = next((c for c in df1.columns if "t4" in c.lower() and ("kill" in c.lower() or "tiêu" in c.lower())), None)
         kill_t5_col = next((c for c in df1.columns if "t5" in c.lower() and ("kill" in c.lower() or "tiêu" in c.lower())), None)
@@ -290,7 +289,7 @@ def load_data():
         df.insert(0, 'H_RAW', range(1, len(df) + 1))
         df['Full_Search'] = df[c_name].astype(str) + " (ID: " + df[c_id].astype(str) + ")"
         
-        return df, c_id, c_name, c_alliance, c_pow, dead_cols
+        return df, c_id, c_name, c_alliance, c_pow, c_dead
     except Exception as e:
         st.error(f"{TEXTS[st.session_state.lang]['load_error']}{e}")
         return None
@@ -298,7 +297,7 @@ def load_data():
 res = load_data()
 
 if res:
-    df, c_id, c_name, c_alliance, c_pow, dead_cols = res
+    df, c_id, c_name, c_alliance, c_pow, c_dead = res
     options_list = df['Full_Search'].tolist()
 
     def search_warriors(search_term: str):
@@ -313,7 +312,7 @@ if res:
     col_lang, col_search = st.columns([1, 4])
     with col_lang:
         st.radio("L", ["VN", "EN"], index=0 if st.session_state.lang == "VN" else 1, 
-                 key="lang_radio_key", on_change=change_lang_callback, horizontal=True, label_visibility="collapsed")
+                key="lang_radio_key", on_change=change_lang_callback, horizontal=True, label_visibility="collapsed")
     
     with col_search:
         choice = st_searchbox(search_warriors, placeholder=L["placeholder"], key="warrior_search_box", label=None)
@@ -343,9 +342,7 @@ if res:
                 st.markdown(f'<div class="info-box"><div class="info-label">{L["season_kill_label"]}</div><div class="info-value">{int(d["SEASON_KILL"]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
                 
                 st.markdown(f"**{L['dead_stats']}**")
-                d_cols_ui = st.columns(len(dead_cols))
-                for i, col in enumerate(dead_cols):
-                    d_cols_ui[i].markdown(f'<div class="info-box"><div class="info-label">{col} {L["dead_season_suffix"]}</div><div class="info-value">{int(d[col]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
+                st.markdown(f'<div class="info-box"><div class="info-label">{L["season_dead_label"]}</div><div class="info-value">{int(d["TOTAL_DEAD"]):,}</div></div>'.replace(",", "."), unsafe_allow_html=True)
 
             g1, g2 = st.columns(2)
             with g1:
@@ -389,8 +386,8 @@ if res:
             st.info(L["search_hint"])
 
     with tab2:
-        v_df = df[['H_RAW', c_name, c_alliance, c_pow, 'TOTAL_KILL'] + dead_cols + ['K_PCT', 'TOTAL_DEAD', 'D_PCT']].copy()
-        v_df.columns = [L['col_rank'], L['col_name'], L['col_alliance'], L['col_power'], L['col_kill']] + dead_cols + [L['col_kpi_kill'], L['col_dead'], L['col_kpi_dead']]
+        v_df = df[['H_RAW', c_name, c_alliance, c_pow, 'TOTAL_KILL', 'TOTAL_DEAD', 'K_PCT', 'D_PCT']].copy()
+        v_df.columns = [L['col_rank'], L['col_name'], L['col_alliance'], L['col_power'], L['col_kill'], L['col_dead'], L['col_kpi_kill'], L['col_kpi_dead']]
         
         format_dict = {
             L['col_power']: lambda x: f"{int(x):,}".replace(",", "."),
@@ -399,8 +396,6 @@ if res:
             L['col_kpi_kill']: '{:.1f}%', 
             L['col_kpi_dead']: '{:.1f}%'
         }
-        for col in dead_cols:
-            format_dict[col] = lambda x: f"{int(x):,}".replace(",", ".")
 
         st.dataframe(v_df.style.format(format_dict), use_container_width=True, height=420)
 
